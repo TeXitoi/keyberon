@@ -66,8 +66,19 @@ module case() {
     }
 }
 
+module back() {
+    translate([0,0,case_depth-1]) linear_extrude(1)
+        rounded_square([case_width-3, case_height-3], r=rounding-1.5, center=true);
+    translate([case_width/2, case_height/2-mcu_height/2,case_depth-1]) linear_extrude(1)
+        rounded_square([mcu_width*2-3, mcu_height-3], r=rounding-1.5, center=true);
+
+}
+
 color([0.3,0.3,0.3])
 case();
+
+color([0.3,0.3,0.3])
+back();
 
 translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) blue_pill();
 
