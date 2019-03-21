@@ -11,7 +11,7 @@ bp_width=23;
 bp_height=53.5;
 bp_x=case_width/2+23/2-23/2+5.5+2;
 bp_y=case_height/2-53.5/2-1.5;
-mcu_width=bp_x-case_width/2++bp_width/2+border;
+mcu_width=bp_x-case_width/2+bp_width/2+border;
 mcu_height=58;
 
 module key_placement() {
@@ -21,6 +21,18 @@ module key_placement() {
                 children();
             }
         }
+    }
+}
+
+module hole_placement() {
+    b=(border-1.5)/2+1.5;
+    for (coord=[[ b-case_width/2,  b-case_height/2, case_depth-1],
+                [ b-case_width/2, -b+case_height/2, case_depth-1],
+                [-b+case_width/2,  b-case_height/2, case_depth-1],
+                [-b+case_width/2+mcu_width, -b+case_height/2, case_depth-1],
+                [-b+case_width/2+mcu_width,  b+case_height/2-mcu_height, case_depth-1]])
+    {
+        translate(coord) children();
     }
 }
 
@@ -63,6 +75,11 @@ module case() {
                 }
             }
         }
+
+        // screw holes
+        hole_placement() {
+            cylinder(d=1.8, h=(case_depth-2)*2, center=true);
+        }
     }
 }
 
@@ -77,8 +94,7 @@ module back() {
 color([0.3,0.3,0.3])
 case();
 
-color([0.3,0.3,0.3])
-back();
+//color([0.3,0.3,0.3]) back();
 
 translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) blue_pill();
 
