@@ -1,6 +1,7 @@
 use <utils.scad>
 use <blue-pill.scad>
 use <key.scad>
+include <printing.scad>
 
 rounding=3;
 border=5;
@@ -17,6 +18,9 @@ bp_y=case_height/2-53.5/2-1.5;
 mcu_width=bp_x-case_width/2+bp_width/2+border;
 mcu_height=58;
 
+$vpr=[210,0,180];
+$vpd=300;
+
 module key_placement() {
     for (i=[0:nb_col-1]) {
         for (j=[0:nb_row-1]) {
@@ -28,11 +32,11 @@ module key_placement() {
 }
 
 module hole_placement() {
-    b=(border-1.5)/2+1.5;
-    for (coord=[[ b-case_width/2,  b-case_height/2, case_depth-1],
-                [ b-case_width/2, -b+case_height/2, case_depth-1],
-                [-b+case_width/2,  b-case_height/2, case_depth-1],
-                [-b+case_width/2+mcu_width, -b+case_height/2, case_depth-1],
+    b=3.75;
+    for (coord=[[ b-case_width/2,            b-case_height/2,            case_depth-1],
+                [ b-case_width/2,           -b+case_height/2,            case_depth-1],
+                [-b+case_width/2,            b-case_height/2,            case_depth-1],
+                [-b+case_width/2+mcu_width, -b+case_height/2,            case_depth-1],
                 [-b+case_width/2+mcu_width,  b+case_height/2-mcu_height, case_depth-1]])
     {
         translate(coord) children();
@@ -86,15 +90,20 @@ module case() {
 }
 
 module back() {
-    translate([0,0,case_depth-1]) linear_extrude(1)
-        rounded_square([case_width-3, case_height-3], r=rounding-1.5, center=true);
-    translate([case_width/2, case_height/2-mcu_height/2,case_depth-1]) linear_extrude(1)
-        rounded_square([mcu_width*2-3, mcu_height-3], r=rounding-1.5, center=true);
-
+    difference() {
+        union() {
+            translate([0,0,case_depth-1]) linear_extrude(1)
+                rounded_square([case_width-3, case_height-3], r=rounding-1.5, center=true);
+            translate([case_width/2, case_height/2-mcu_height/2,case_depth-1]) linear_extrude(1)
+                rounded_square([mcu_width*2-3, mcu_height-3], r=rounding-1.5, center=true);
+        }
+        hole_placement() {
+            translate([0,0,-1]) cylinder(d1=0.5, d2=6.5, h=3);
+        }
+    }
 }
 
-color([0.3,0.3,0.3])
-case();
+color([0.3,0.3,0.3]) case();
 
 //color([0.3,0.3,0.3]) back();
 
