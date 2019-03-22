@@ -17,9 +17,7 @@ bp_x=case_width/2+23/2-23/2+5.5+2;
 bp_y=case_height/2-53.5/2-1.5;
 mcu_width=bp_x-case_width/2+bp_width/2+border;
 mcu_height=58;
-
-$vpr=[210,0,180];
-$vpd=300;
+cut_offset= nb_col%2==0 ? -2.5 : -2.5+19/2;
 
 module key_placement() {
     for (i=[0:nb_col-1]) {
@@ -37,7 +35,13 @@ module hole_placement() {
                 [ b-case_width/2,           -b+case_height/2,            case_depth-1],
                 [-b+case_width/2,            b-case_height/2,            case_depth-1],
                 [-b+case_width/2+mcu_width, -b+case_height/2,            case_depth-1],
-                [-b+case_width/2+mcu_width,  b+case_height/2-mcu_height, case_depth-1]])
+                [-b+case_width/2+mcu_width,  b+case_height/2-mcu_height, case_depth-1],
+                [-2.5+cut_offset,           -b+case_height/2,            case_depth-1],
+                [ 2.5+cut_offset,           -b+case_height/2,            case_depth-1],
+                [ 7.5+cut_offset,           -b+case_height/2,            case_depth-1],
+                [-2.5+cut_offset,            b-case_height/2,            case_depth-1],
+                [ 2.5+cut_offset,            b-case_height/2,            case_depth-1],
+                [ 7.5+cut_offset,            b-case_height/2,            case_depth-1]])
     {
         translate(coord) children();
     }
@@ -89,6 +93,44 @@ module case() {
     }
 }
 
+module left_part() {
+    translate([-case_width/2+cut_offset-0.01, 0, 0])
+        cube([case_width, case_height*2, case_depth*3], center=true);
+}
+
+module dove_tail(epsilon=0) {
+    translate([cut_offset, 0, -epsilon]) {
+        for (i=[0:nb_row-2]) {
+            translate([0, (i-(nb_row-2)/2)*19, 0]) linear_extrude(3+epsilon)
+                polygon([[-1, 2], [3, 4], [3, -4], [-1, -2]]);
+        }
+        poly=[[-1, case_height/2-1.5],
+              [3, case_height/2-1.5],
+              [3, case_height/2-border-1.5],
+              [-1, case_height/2-border+0.5]];
+        translate([0, 0, 0]) linear_extrude(3)
+            polygon(poly);
+        translate([0, 0, 0]) linear_extrude(3)
+            polygon([ for (c=poly) [c[0], -c[1]] ]);
+    }
+}
+
+module left_case() {
+    intersection() {
+        case();
+        left_part();
+    }
+    dove_tail();
+}
+
+module right_case() {
+    difference() {
+        case();
+        left_part();
+        dove_tail(epsilon=1);
+    }
+}
+
 module back() {
     difference() {
         union() {
@@ -96,6 +138,7 @@ module back() {
                 rounded_square([case_width-3, case_height-3], r=rounding-1.5, center=true);
             translate([case_width/2, case_height/2-mcu_height/2,case_depth-1]) linear_extrude(1)
                 rounded_square([mcu_width*2-3, mcu_height-3], r=rounding-1.5, center=true);
+            // TODO: bp fix + led opening + led separation
         }
         hole_placement() {
             translate([0,0,-1]) cylinder(d1=0.5, d2=6.5, h=3);
@@ -103,27 +146,48 @@ module back() {
     }
 }
 
-color([0.3,0.3,0.3]) case();
-
-//color([0.3,0.3,0.3]) back();
-
-translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) blue_pill();
-
-//switches
-key_placement() {
-    color([1,1,1,0.8]) {
-        cube([14,14,10], center=true);
-        translate([0,0,5]) cylinder(h=6, d=4, center=true);
+module left_back() {
+    intersection() {
+        back();
+        translate([5-0.25, 0, 0]) left_part();
     }
- }
+    dove_tail();
+}
+module right_back() {
+    difference() {
+        back();
+        translate([5+0.25, 0, 0]) left_part();
+    }
+    dove_tail();
+}
 
-// keys
-for (i=[0:nb_col-1]) {
-    for (j=[0:nb_row-1]) {
-        translate([19*((nb_col-1)/2-i), 19*(j-(nb_row-1)/2), 0]) {
-            note=(i*4+j*3+10)%12;
-            c = note==1||note==3||note==6||note==8||note==10 ? [0.2,0.2,0.2] : [0.9,0.9,0.9];
-            color(c) translate([0,0,-5]) rotate([180,0,0]) key();
+module switches() {
+    key_placement() {
+        color([1,1,1,0.8]) {
+            cube([14,14,10], center=true);
+            translate([0,0,5]) cylinder(h=6, d=4, center=true);
         }
     }
 }
+
+module keys() {
+    for (i=[0:nb_col-1]) {
+        for (j=[0:nb_row-1]) {
+            translate([19*((nb_col-1)/2-i), 19*(j-(nb_row-1)/2), 0]) {
+                note=(i*4+j*3+10)%12;
+                c = note==1||note==3||note==6||note==8||note==10 ? [0.2,0.2,0.2] : [0.9,0.9,0.9];
+                color(c) translate([0,0,-5]) rotate([180,0,0]) key();
+            }
+        }
+    }
+}
+
+color([0.3,0.3,0.3]) {
+    left_case();
+    right_case();
+    left_back();
+    right_back();
+}
+translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) blue_pill();
+switches();
+keys();
