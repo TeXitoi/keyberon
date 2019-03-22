@@ -47,6 +47,11 @@ module hole_placement() {
     }
 }
 
+module wire_hole(epsilon=0) {
+    translate([bp_x-bp_width/2, bp_y, (case_depth-5+epsilon)/2+4])
+        cube([bp_width, bp_height-2*border+3, case_depth-5+epsilon], center=true);
+}
+
 module case() {
     difference() {
         union() {
@@ -70,7 +75,7 @@ module case() {
         // bp hole
         translate([bp_x, bp_y, case_depth/2+1]) cube([bp_width-4, bp_height, case_depth], center=true);
         translate([bp_x, bp_y, case_depth/2+4]) cube([bp_width, bp_height, case_depth], center=true);
-        translate([bp_x-bp_width/2, bp_y, case_depth/2+4]) cube([bp_width, bp_height-2*border+3, case_depth], center=true);
+        wire_hole(epsilon=1);
 
         // debugger hole
         translate([bp_x, bp_y-bp_height/2, 5-(1.6+2.6)/2]) cube([11, 25, 3], center=true);
@@ -91,6 +96,7 @@ module case() {
             cylinder(d=1.8, h=(case_depth-2)*2, center=true);
         }
     }
+    // TODO: led opening + led separation
 }
 
 module left_part() {
@@ -138,8 +144,12 @@ module back() {
                 rounded_square([case_width-3, case_height-3], r=rounding-1.5, center=true);
             translate([case_width/2, case_height/2-mcu_height/2,case_depth-1]) linear_extrude(1)
                 rounded_square([mcu_width*2-3, mcu_height-3], r=rounding-1.5, center=true);
-            // TODO: bp fix + led opening + led separation
+            for (i=[-1, 1]) {
+                translate([bp_x+i*(bp_width/2-1.5/2-1.5), bp_y, (case_depth-6)/2+6])
+                    cube([1.5, bp_height-1, case_depth-6], center=true);
+            }
         }
+        wire_hole();
         hole_placement() {
             translate([0,0,-1]) cylinder(d1=0.5, d2=6.5, h=3);
         }
@@ -151,14 +161,13 @@ module left_back() {
         back();
         translate([5-0.25, 0, 0]) left_part();
     }
-    dove_tail();
 }
+
 module right_back() {
     difference() {
         back();
         translate([5+0.25, 0, 0]) left_part();
     }
-    dove_tail();
 }
 
 module switches() {
