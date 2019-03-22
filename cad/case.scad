@@ -4,9 +4,12 @@ use <key.scad>
 
 rounding=3;
 border=5;
-case_width=19*12-5+border*2;
-case_height=19*5-5+border*2;
 case_depth=9;
+nb_row=5;
+nb_col=12;
+
+case_width=19*nb_col-5+border*2;
+case_height=19*nb_row-5+border*2;
 bp_width=23;
 bp_height=53.5;
 bp_x=case_width/2+23/2-23/2+5.5+2;
@@ -15,9 +18,9 @@ mcu_width=bp_x-case_width/2+bp_width/2+border;
 mcu_height=58;
 
 module key_placement() {
-    for (i=[0:11]) {
-        for (j=[0:4]) {
-            translate([19*(5.5-i), 19*(j-2), 0]) {
+    for (i=[0:nb_col-1]) {
+        for (j=[0:nb_row-1]) {
+            translate([19*((nb_col-1)/2-i), 19*(j-(nb_row-1)/2), 0]) {
                 children();
             }
         }
@@ -47,7 +50,8 @@ module case() {
         }
 
         // back hole
-        translate([0,0,case_depth/2+4]) cube([19*12-5, 19*5-5, case_depth], center=true);
+        translate([0,0,case_depth/2+4])
+            cube([case_width-2*border, case_height-2*border, case_depth], center=true);
 
         // backpanel pocket
         translate([0,0,case_depth-1]) linear_extrude(2)
@@ -67,12 +71,10 @@ module case() {
         translate([bp_x, bp_y+bp_height/2+5, 5-(1.6+2.6)/2]) cube([12, 10.01, 8], center=true);
 
         // switch holes
-        for (i=[0:11]) {
-            for (j=[0:4]) {
-                translate([19*(i-5.5), 19*(j-2), 5]) {
-                    cube([14,14,15], center=true);
-                    translate([0,0,1.5]) cube([5, 14+3, 10], center=true);
-                }
+        key_placement() {
+            translate([0,0,5]) {
+                cube([14,14,15], center=true);
+                translate([0,0,1.5]) cube([5, 14+3, 10], center=true);
             }
         }
 
@@ -107,9 +109,9 @@ key_placement() {
  }
 
 // keys
-for (i=[0:11]) {
-    for (j=[0:4]) {
-        translate([19*(5.5-i), 19*(j-2), 0]) {
+for (i=[0:nb_col-1]) {
+    for (j=[0:nb_row-1]) {
+        translate([19*((nb_col-1)/2-i), 19*(j-(nb_row-1)/2), 0]) {
             note=(i*4+j*3+10)%12;
             c = note==1||note==3||note==6||note==8||note==10 ? [0.2,0.2,0.2] : [0.9,0.9,0.9];
             color(c) translate([0,0,-5]) rotate([180,0,0]) key();
