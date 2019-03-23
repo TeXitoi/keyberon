@@ -29,6 +29,10 @@ module key_placement() {
     }
 }
 
+module bp_placement() {
+  translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) children();
+}
+
 module hole_placement() {
     b=3.75;
     for (coord=[[ b-case_width/2,            b-case_height/2,            case_depth-1],
@@ -73,15 +77,8 @@ module case() {
             rounded_square([mcu_width*2-2, mcu_height-2], r=rounding-1, center=true);
 
         // bp hole
-        translate([bp_x, bp_y, case_depth/2+1]) cube([bp_width-4, bp_height, case_depth], center=true);
-        translate([bp_x, bp_y, case_depth/2+4]) cube([bp_width, bp_height, case_depth], center=true);
+        bp_placement() blue_pill_pocket(under=4, open_under=true, led_holes=true);
         wire_hole(epsilon=1);
-
-        // debugger hole
-        translate([bp_x, bp_y-bp_height/2, 5-(1.6+2.6)/2]) cube([11, 25, 3], center=true);
-
-        // usb hole
-        translate([bp_x, bp_y+bp_height/2+5, 5-(1.6+2.6)/2]) cube([12, 10.01, 8], center=true);
 
         // switch holes
         key_placement() {
@@ -195,8 +192,8 @@ color([0.3,0.3,0.3]) {
     left_case();
     right_case();
     left_back();
-    right_back();
+    //right_back();
 }
-translate([bp_x, bp_y, 1+3+1]) rotate([180,0,-90]) blue_pill();
+bp_placement() blue_pill(boot_pins=false);
 switches();
 keys();
