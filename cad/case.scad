@@ -97,7 +97,7 @@ module case() {
 }
 
 module left_part() {
-    translate([-case_width/2+cut_offset-0.01, 0, 0])
+    translate([-case_width/2+cut_offset, 0, 0])
         cube([case_width, case_height*2, case_depth*3], center=true);
 }
 
@@ -111,9 +111,9 @@ module dove_tail(epsilon=0) {
               [3, case_height/2-1.5],
               [3, case_height/2-border-1.5],
               [-1, case_height/2-border+0.5]];
-        translate([0, 0, 0]) linear_extrude(3)
+        translate([0, 0, 0]) linear_extrude(3+epsilon)
             polygon(poly);
-        translate([0, 0, 0]) linear_extrude(3)
+        translate([0, 0, 0]) linear_extrude(3+epsilon)
             polygon([ for (c=poly) [c[0], -c[1]] ]);
     }
 }
@@ -121,7 +121,7 @@ module dove_tail(epsilon=0) {
 module left_case() {
     intersection() {
         case();
-        left_part();
+        translate([-0.01,0,0]) left_part();
     }
     dove_tail();
 }
@@ -129,7 +129,7 @@ module left_case() {
 module right_case() {
     difference() {
         case();
-        left_part();
+        translate([0.01,0,0]) left_part();
         dove_tail(epsilon=1);
     }
 }
