@@ -79,7 +79,7 @@ module blue_pill(boot_pins=true) {
     cube([1,1,1], center=true);
 
   // reset
-  color([0.9, 0.9, 0.9]) translate([-5.5*pin_size,-pin_size,depth/2+3.5/2]) {
+  color([0.9, 0.9, 0.9]) translate([-5.5*pin_size,-1.5*pin_size,depth/2+3.5/2]) {
     cube([6,3.5,3.5], center=true);
     cube([3,1.4,3.6+0.6], center=true);
   }
@@ -89,32 +89,36 @@ module blue_pill_pocket(under=2, over=3, open_under=false, open_over=false, led_
   difference() {
     union() {
       // PCB
-      cube([53.5, 23, 2], center=true);
+      cube([54, 23, 2], center=true);
 
       // debugger
       translate([33, 0, (depth+pin_size)/2]) cube([25, 11, 3], center=true);
 
       // usb
-      translate([-53.5/2+0.01-30/2, 0, (depth+pin_size)/2]) cube([30, 12, 8], center=true);
+      translate([-54/2+0.01-30/2, 0, (depth+pin_size)/2]) cube([30, 12, 8], center=true);
 
       // under
       translate([0, 0, -(under+1)/2])
-        cube([53.5, 23-(open_under ? 0 : 4), under+1], center=true);
+        cube([54, 23-(open_under ? 0 : 4), under+1], center=true);
 
       // over
       translate([0, 0, (over+1)/2])
-        cube([53.5, 23-(open_over ? 0 : 4), over+1], center=true);
+        cube([54, 23-(open_over ? 0 : 4), over+1], center=true);
 
-      // button
-      translate([-5.5*pin_size,-pin_size,depth/2+3.5/2]) {
-        cube([6.5,4,4], center=true);
-        cube([3,1.4,3.6+0.6+4], center=true);
+      // HSE
+      translate([3.5*pin_size,0,depth/2]) linear_extrude(4)
+          rounded_square([4.5,11], r=1, center=true);
+
+      // reset
+      translate([-5.5*pin_size,-1.5*pin_size,depth/2+4/2]) {
+        cube([7,4.5,4], center=true);
+        cube([4,2.5,3.6+0.6+4], center=true);
       }
 
       // led_holes
       if (led_holes) {
         for (x=[-3,3]) {
-          translate([7*pin_size,x,0]) cylinder(d=1, h=20);
+          translate([7*pin_size,x,0]) cylinder(d=1.5, h=20);
         }
       }
     }

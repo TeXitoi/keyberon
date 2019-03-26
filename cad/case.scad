@@ -4,7 +4,7 @@ use <key.scad>
 include <printing.scad>
 
 rounding=3;
-border=5;
+border=7;
 case_depth=9;
 nb_row=5;
 nb_col=12;
@@ -16,7 +16,7 @@ bp_height=53.5;
 bp_x=case_width/2+23/2-23/2+5.5+2;
 bp_y=case_height/2-53.5/2-1.5;
 mcu_width=bp_x-case_width/2+bp_width/2+border;
-mcu_height=58;
+mcu_height=60;
 cut_offset= nb_col%2==0 ? -2.5 : -2.5+19/2;
 
 module key_placement() {
@@ -34,18 +34,18 @@ module bp_placement() {
 }
 
 module hole_placement() {
-    b=3.75;
+    b=4.7;
     for (coord=[[ b-case_width/2,            b-case_height/2,            case_depth-1],
                 [ b-case_width/2,           -b+case_height/2,            case_depth-1],
                 [-b+case_width/2,            b-case_height/2,            case_depth-1],
                 [-b+case_width/2+mcu_width, -b+case_height/2,            case_depth-1],
                 [-b+case_width/2+mcu_width,  b+case_height/2-mcu_height, case_depth-1],
-                [-2.5+cut_offset,           -b+case_height/2,            case_depth-1],
-                [ 2.5+cut_offset,           -b+case_height/2,            case_depth-1],
-                [ 7.5+cut_offset,           -b+case_height/2,            case_depth-1],
-                [-2.5+cut_offset,            b-case_height/2,            case_depth-1],
-                [ 2.5+cut_offset,            b-case_height/2,            case_depth-1],
-                [ 7.5+cut_offset,            b-case_height/2,            case_depth-1]])
+                [-3+cut_offset,             -b+case_height/2,            case_depth-1],
+                [ 2+cut_offset,             -b+case_height/2,            case_depth-1],
+                [ 8+cut_offset,             -b+case_height/2,            case_depth-1],
+                [-3+cut_offset,              b-case_height/2,            case_depth-1],
+                [ 2+cut_offset,              b-case_height/2,            case_depth-1],
+                [ 8+cut_offset,              b-case_height/2,            case_depth-1]])
     {
         translate(coord) children();
     }
@@ -90,7 +90,7 @@ module case() {
 
         // screw holes
         hole_placement() {
-            cylinder(d=1.8, h=(case_depth-2)*2, center=true);
+            cylinder(d=1.8, h=(case_depth-4-0.3)*2, center=true);
         }
     }
     // TODO: led opening + led separation
@@ -104,24 +104,19 @@ module left_part() {
 module dove_tail(epsilon=0) {
     translate([cut_offset, 0, -epsilon]) {
         for (i=[0:nb_row-2]) {
-            translate([0, (i-(nb_row-2)/2)*19, 0]) linear_extrude(3+epsilon)
-                polygon([[-1, 2], [3, 4], [3, -4], [-1, -2]]);
+            translate([0, (i-(nb_row-2)/2)*19, 0]) linear_extrude(4+2*epsilon)
+                polygon([[-1, 2+epsilon],
+                         [3+epsilon, 4+epsilon],
+                         [3+epsilon, -4-epsilon],
+                         [-1, -2+epsilon]]);
         }
-        poly=[[-1, case_height/2-1.5],
-              [3, case_height/2-1.5],
-              [3, case_height/2-border-1.5],
-              [-1, case_height/2-border+0.5]];
-        translate([0, 0, 0]) linear_extrude(3+epsilon)
-            polygon(poly);
-        translate([0, 0, 0]) linear_extrude(3+epsilon)
-            polygon([ for (c=poly) [c[0], -c[1]] ]);
     }
 }
 
 module left_case() {
     intersection() {
         case();
-        translate([-0.01,0,0]) left_part();
+        translate([-0.1,0,0]) left_part();
     }
     dove_tail();
 }
@@ -129,8 +124,8 @@ module left_case() {
 module right_case() {
     difference() {
         case();
-        translate([0.01,0,0]) left_part();
-        dove_tail(epsilon=1);
+        translate([0.1,0,0]) left_part();
+        dove_tail(epsilon=0.2);
     }
 }
 
@@ -156,14 +151,14 @@ module back() {
 module left_back() {
     intersection() {
         back();
-        translate([5-0.25, 0, 0]) left_part();
+        translate([5-0.1, 0, 0]) left_part();
     }
 }
 
 module right_back() {
     difference() {
         back();
-        translate([5+0.25, 0, 0]) left_part();
+        translate([5+0.1, 0, 0]) left_part();
     }
 }
 
@@ -191,7 +186,7 @@ color([0.3,0.3,0.3]) {
     left_case();
     right_case();
     left_back();
-    //right_back();
+    right_back();
 }
 bp_placement() blue_pill(boot_pins=false);
 switches();
