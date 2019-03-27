@@ -105,10 +105,7 @@ module dove_tail(epsilon=0) {
     translate([cut_offset, 0, -epsilon]) {
         for (i=[0:nb_row-2]) {
             translate([0, (i-(nb_row-2)/2)*19, 0]) linear_extrude(4+2*epsilon)
-                polygon([[-1, 2+epsilon],
-                         [3+epsilon, 4+epsilon],
-                         [3+epsilon, -4-epsilon],
-                         [-1, -2+epsilon]]);
+                polygon([[-1, 2], [3, 4], [3, -4], [-1, -2]]);
         }
     }
 }
@@ -116,7 +113,7 @@ module dove_tail(epsilon=0) {
 module left_case() {
     intersection() {
         case();
-        translate([-0.1,0,0]) left_part();
+        translate([-0.01,0,0]) left_part();
     }
     dove_tail();
 }
@@ -124,7 +121,7 @@ module left_case() {
 module right_case() {
     difference() {
         case();
-        translate([0.1,0,0]) left_part();
+        translate([0.01,0,0]) left_part();
         dove_tail(epsilon=0.2);
     }
 }

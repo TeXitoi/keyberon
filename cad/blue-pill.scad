@@ -106,13 +106,13 @@ module blue_pill_pocket(under=2, over=3, open_under=false, open_over=false, led_
         cube([54, 23-(open_over ? 0 : 4), over+1], center=true);
 
       // HSE
-      translate([3.5*pin_size,0,depth/2]) linear_extrude(4)
+      translate([3.5*pin_size,0,depth/2]) linear_extrude(3.8)
           rounded_square([4.5,11], r=1, center=true);
 
       // reset
-      translate([-5.5*pin_size,-1.5*pin_size,depth/2+4/2]) {
-        cube([7,4.5,4], center=true);
-        cube([4,2.5,3.6+0.6+4], center=true);
+      translate([-5.5*pin_size,-1.5*pin_size,depth/2+3.8/2]) {
+        cube([7,4.5,3.8], center=true);
+        cube([4,2.5,3.8+4], center=true);
       }
 
       // led_holes
