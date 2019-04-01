@@ -1,0 +1,14 @@
+[package]
+name = "rusty-preonic"
+version = "0.1.0"
+authors = ["Guillaume Pinot <texitoi@texitoi.eu>"]
+edition = "2018"
+
+[dependencies]
+stm32f1xx-hal = { version = "0.1", features = ["rt", "stm32f103" ] }
+cortex-m = "0.5"
+cortex-m-rt = { version = "0.6.6", features = ["device"] }
+panic-semihosting = "0.5"
+stm32f103xx-usb = { git = "https://github.com/mvirkkunen/stm32f103xx-usb.git" }
+usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
+cortex-m-rtfm = "0.4.1"
