@@ -12,3 +12,14 @@ panic-semihosting = "0.5"
 stm32f103xx-usb = { git = "https://github.com/mvirkkunen/stm32f103xx-usb.git" }
 usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
 cortex-m-rtfm = "0.4.1"
+
+[profile.dev]
+opt-level = 1
+lto = true
+incremental = false
+
+[profile.release]
+lto = true
+incremental = false
+opt-level = "z"
+debug = true
