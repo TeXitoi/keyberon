@@ -158,13 +158,13 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
         writer.write(
             DescriptorType::Hid as u8,
             &[
-                specification_release[0],      // bcdHID.lower
-                specification_release[1],      // bcdHID.upper
-                0,                             // bCountryCode: 0 = not supported
-                1,                             // bNumDescriptors
-                DescriptorType::Report as u8,  // bDescriptorType
-                descriptor_len[0],             // bDescriptorLength.lower
-                descriptor_len[1],             // bDescriptorLength.upper
+                specification_release[0],     // bcdHID.lower
+                specification_release[1],     // bcdHID.upper
+                0,                            // bCountryCode: 0 = not supported
+                1,                            // bNumDescriptors
+                DescriptorType::Report as u8, // bDescriptorType
+                descriptor_len[0],            // bDescriptorLength.lower
+                descriptor_len[1],            // bDescriptorLength.upper
             ],
         )?;
 

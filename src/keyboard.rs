@@ -1,4 +1,4 @@
-use crate::hid::{HidDevice, Subclass, Protocol, ReportType};
+use crate::hid::{HidDevice, Protocol, ReportType, Subclass};
 use crate::Led;
 use stm32f1xx_hal::prelude::*;
 
