@@ -209,6 +209,7 @@ dependencies = [
  "cortex-m 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rt 0.6.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rtfm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cortex-m-semihosting 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-semihosting 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stm32f103xx-usb 0.1.0 (git+https://github.com/mvirkkunen/stm32f103xx-usb.git)",
  "stm32f1xx-hal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",

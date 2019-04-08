@@ -39,10 +39,13 @@ impl HidDevice for Keyboard {
     }
 
     fn get_report(&mut self, report_type: ReportType, report_id: u8) -> Result<&[u8], ()> {
-        if report_type == ReportType::Output {
-            self.report[2] = *self.iter.next().unwrap_or(&0);
+        match report_type {
+            ReportType::Input => {
+                self.report[2] = *self.iter.next().unwrap_or(&0);
+                Ok(&self.report)
+            },
+            _ => Err(())
         }
-        Ok(&self.report)
     }
 
     fn set_report(
@@ -51,11 +54,14 @@ impl HidDevice for Keyboard {
         report_id: u8,
         data: &[u8],
     ) -> Result<(), ()> {
-        if data.get(0).map_or(false, |c| c & 1 << 1 != 0) {
-            self.led.set_low()
-        } else {
-            self.led.set_high()
+        if report_type == ReportType::Output && report_id == 0 && data.len() == 1 {
+            if data[0] & 1 << 1 != 0 {
+                self.led.set_low()
+            } else {
+                self.led.set_high()
+            }
+            return Ok(())
         }
-        Ok(())
+        Err(())
     }
 }

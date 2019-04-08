@@ -3,6 +3,22 @@
 
 extern crate panic_semihosting;
 
+macro_rules! dbg {
+    ($val:expr) => {
+        // Use of `match` here is intentional because it affects the lifetimes
+        // of temporaries - https://stackoverflow.com/a/48732525/1063961
+        match $val {
+            tmp => {
+                use core::fmt::Write;
+                let mut out = cortex_m_semihosting::hio::hstdout().unwrap();
+                writeln!(out, "[{}:{}] {} = {:#?}",
+                    file!(), line!(), stringify!($val), &tmp).unwrap();
+                tmp
+            }
+        }
+    }
+}
+
 mod hid;
 mod keyboard;
 
@@ -52,7 +68,7 @@ const APP: () = {
         ));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
-        let mut usb_class = hid::HidClass::new(Keyboard::new(led), &usb_bus);
+        let usb_class = hid::HidClass::new(Keyboard::new(led), &usb_bus);
         let mut usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x1209, 0xa1e5))
             .manufacturer("RIIR Task Force")
             .product("Keyboard")
@@ -67,14 +83,27 @@ const APP: () = {
         }
     }
 
-    #[interrupt(resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
     fn USB_HP_CAN_TX() {
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
     }
 
-    #[interrupt(resources = [USB_DEV, USB_CLASS])]
+    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
     fn USB_LP_CAN_RX0() {
+        static mut CNT: u32 = 0;
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
+        if *CNT > 100 {
+            rtfm::pend(stm32f1xx_hal::stm32::Interrupt::EXTI1);
+        }
+        *CNT += 1;
+    }
+
+    #[interrupt(priority = 1, resources = [USB_CLASS])]
+    fn EXTI1() {
+        dbg!("trying...");
+        while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(&[0,0,0x4,0,0,0,0,0])) {}
+        while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(&[0,0,0,0,0,0,0,0])) {}
+        dbg!("done");
     }
 };
 

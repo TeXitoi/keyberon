@@ -144,6 +144,12 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
             Err(()) => xfer.reject().ok(),
         };
     }
+
+    fn set_idle(&mut self, xfer: ControlOut<B>) {
+        let req = xfer.request();
+        let [duration, report_id] = req.value.to_be_bytes();
+        dbg!(duration);
+    }
 }
 
 impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
@@ -196,8 +202,8 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
     fn endpoint_in_complete(&mut self, addr: EndpointAddress) {
         if addr == self.endpoint_interrupt_in.address() && self.expect_interrupt_in_complete {
             self.expect_interrupt_in_complete = false;
-            //while let Err(_) = self.endpoint_interrupt_in.write(&[]) {}
-            cortex_m::asm::delay(48*1000*7);
+            self.endpoint_interrupt_in.write(&[]).ok();
+            cortex_m::asm::delay(48*1000);
         }
     }
 
@@ -213,13 +219,17 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
                         let descriptor = self.device.report_descriptor();
                         xfer.accept_with(descriptor).ok();
                     }
+                } else {
+                    dbg!(req);
                 }
             }
             (RequestType::Class, Recipient::Interface) => {
                 if let Some(request) = Request::new(req.request) {
-                    if request == Request::GetReport {
+                    if dbg!(request) == Request::GetReport {
                         self.get_report(xfer);
                     }
+                } else {
+                    dbg!(req);
                 }
             }
             _ => {}
@@ -232,6 +242,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
             if let Some(request) = Request::new(req.request) {
                 match dbg!(request) {
                     Request::SetReport => self.set_report(xfer),
+                    Request::SetIdle => self.set_idle(xfer),
                     _ => (),
                 }
             }
