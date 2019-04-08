@@ -11,14 +11,12 @@ const REPORT_DESCRIPTOR: &[u8] = &[
 ];
 
 pub struct Keyboard {
-    iter: core::slice::Iter<'static, u8>,
     report: [u8; 8],
     led: Led,
 }
 impl Keyboard {
     pub fn new(led: Led) -> Keyboard {
         Keyboard {
-            iter: [0x68, 0x65, 0x5c].iter(),
             report: [0; 8],
             led,
         }
@@ -40,11 +38,8 @@ impl HidDevice for Keyboard {
 
     fn get_report(&mut self, report_type: ReportType, report_id: u8) -> Result<&[u8], ()> {
         match report_type {
-            ReportType::Input => {
-                self.report[2] = *self.iter.next().unwrap_or(&0);
-                Ok(&self.report)
-            },
-            _ => Err(())
+            ReportType::Input => Ok(&self.report),
+            _ => Err(()),
         }
     }
 
@@ -60,7 +55,7 @@ impl HidDevice for Keyboard {
             } else {
                 self.led.set_high()
             }
-            return Ok(())
+            return Ok(());
         }
         Err(())
     }

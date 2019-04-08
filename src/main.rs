@@ -11,12 +11,19 @@ macro_rules! dbg {
             tmp => {
                 use core::fmt::Write;
                 let mut out = cortex_m_semihosting::hio::hstdout().unwrap();
-                writeln!(out, "[{}:{}] {} = {:#?}",
-                    file!(), line!(), stringify!($val), &tmp).unwrap();
+                writeln!(
+                    out,
+                    "[{}:{}] {} = {:#?}",
+                    file!(),
+                    line!(),
+                    stringify!($val),
+                    &tmp
+                )
+                .unwrap();
                 tmp
             }
         }
-    }
+    };
 }
 
 mod hid;
@@ -101,8 +108,14 @@ const APP: () = {
     #[interrupt(priority = 1, resources = [USB_CLASS])]
     fn EXTI1() {
         dbg!("trying...");
-        while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(&[0,0,0x4,0,0,0,0,0])) {}
-        while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(&[0,0,0,0,0,0,0,0])) {}
+        while let Ok(0) = resources
+            .USB_CLASS
+            .lock(|k| k.write(&[0, 0, 0x4, 0, 0, 0, 0, 0]))
+        {}
+        while let Ok(0) = resources
+            .USB_CLASS
+            .lock(|k| k.write(&[0, 0, 0, 0, 0, 0, 0, 0]))
+        {}
         dbg!("done");
     }
 };
