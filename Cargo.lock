@@ -119,6 +119,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyberon"
+version = "0.1.0"
+dependencies = [
+ "cortex-m 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cortex-m-rt 0.6.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cortex-m-rtfm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cortex-m-semihosting 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "panic-semihosting 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "stm32f103xx-usb 0.1.0 (git+https://github.com/mvirkkunen/stm32f103xx-usb.git)",
+ "stm32f1xx-hal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "usb-device 0.2.0 (git+https://github.com/mvirkkunen/usb-device?rev=e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3)",
+]
+
+[[package]]
 name = "nb"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,20 +214,6 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rusty-preonic"
-version = "0.1.0"
-dependencies = [
- "cortex-m 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-m-rt 0.6.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-m-rtfm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-m-semihosting 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "panic-semihosting 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "stm32f103xx-usb 0.1.0 (git+https://github.com/mvirkkunen/stm32f103xx-usb.git)",
- "stm32f1xx-hal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "usb-device 0.2.0 (git+https://github.com/mvirkkunen/usb-device?rev=e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3)",
 ]
 
 [[package]]
