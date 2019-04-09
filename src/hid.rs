@@ -32,7 +32,7 @@ pub enum Protocol {
 pub enum DescriptorType {
     Hid = 0x21,
     Report = 0x22,
-    Physical = 0x23,
+    _Physical = 0x23,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

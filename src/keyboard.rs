@@ -36,7 +36,7 @@ impl HidDevice for Keyboard {
         REPORT_DESCRIPTOR
     }
 
-    fn get_report(&mut self, report_type: ReportType, report_id: u8) -> Result<&[u8], ()> {
+    fn get_report(&mut self, report_type: ReportType, _report_id: u8) -> Result<&[u8], ()> {
         match report_type {
             ReportType::Input => Ok(&self.report),
             _ => Err(()),
