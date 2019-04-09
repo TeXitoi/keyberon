@@ -54,8 +54,9 @@ const PID: u16 = 0x16c0;
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
     static mut USB_CLASS: KeyboardHidClass = ();
-    static MATRIX: matrix::Matrix = ();
-    static mut DEBOUNCER: Debouncer<[bool; 6]> = Debouncer::new([false; 6], [false; 6], 10);
+    static mut MATRIX: matrix::Matrix = ();
+    static mut DEBOUNCER: Debouncer<[[bool; 5]; 12]> =
+        Debouncer::new([[false; 5]; 12], [[false; 5]; 12], 10);
 
     #[init]
     fn init() -> init::LateResources {
@@ -102,12 +103,27 @@ const APP: () = {
             USB_DEV: usb_dev,
             USB_CLASS: usb_class,
             MATRIX: matrix::Matrix::new(
-                gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
-                gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
-                gpiob.pb14.into_pull_up_input(&mut gpiob.crh),
-                gpiob.pb15.into_pull_up_input(&mut gpiob.crh),
-                gpioa.pa8.into_pull_up_input(&mut gpioa.crh),
-                gpioa.pa9.into_pull_up_input(&mut gpioa.crh),
+                matrix::Cols(
+                    gpiob.pb12.into_push_pull_output(&mut gpiob.crh),
+                    gpiob.pb13.into_push_pull_output(&mut gpiob.crh),
+                    gpiob.pb14.into_push_pull_output(&mut gpiob.crh),
+                    gpiob.pb15.into_push_pull_output(&mut gpiob.crh),
+                    gpioa.pa8.into_push_pull_output(&mut gpioa.crh),
+                    gpioa.pa9.into_push_pull_output(&mut gpioa.crh),
+                    gpioa.pa10.into_push_pull_output(&mut gpioa.crh),
+                    gpiob.pb5.into_push_pull_output(&mut gpiob.crl),
+                    gpiob.pb6.into_push_pull_output(&mut gpiob.crl),
+                    gpiob.pb7.into_push_pull_output(&mut gpiob.crl),
+                    gpiob.pb8.into_push_pull_output(&mut gpiob.crh),
+                    gpiob.pb9.into_push_pull_output(&mut gpiob.crh),
+                ),
+                matrix::Rows(
+                    gpiob.pb11.into_pull_down_input(&mut gpiob.crh),
+                    gpiob.pb10.into_pull_down_input(&mut gpiob.crh),
+                    gpiob.pb1.into_pull_down_input(&mut gpiob.crl),
+                    gpiob.pb0.into_pull_down_input(&mut gpiob.crl),
+                    gpioa.pa7.into_pull_down_input(&mut gpioa.crl),
+                ),
             ),
         }
     }
@@ -131,12 +147,12 @@ const APP: () = {
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
             let new = [
-                data[0] as u8 | (data[1] as u8) << 1,
+                data[0][0] as u8 | (data[0][1] as u8) << 1 | (data[0][2] as u8) << 2 | (data[0][3] as u8) << 3 | (data[0][4] as u8) << 4,
                 0,
-                if data[2] { 0x1b } else { 0 },
-                if data[3] { 0x06 } else { 0 },
-                if data[4] { 0x19 } else { 0 },
-                if data[5] { 0x39 } else { 0 },
+                if data[1][2] { 0x1b } else { 0 },
+                if data[1][3] { 0x06 } else { 0 },
+                if data[1][4] { 0x19 } else { 0 },
+                if data[2][0] { 0x39 } else { 0 },
                 0,
                 0,
             ];
