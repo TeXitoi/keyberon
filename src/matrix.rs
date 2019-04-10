@@ -1,11 +1,4 @@
-use stm32f1xx_hal::gpio::{
-    Input,
-    Output,
-    PushPull,
-    PullDown,
-    gpioa::*,
-    gpiob::*,
-};
+use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullDown, PushPull};
 use stm32f1xx_hal::prelude::*;
 
 macro_rules! impl_getter {
@@ -69,7 +62,7 @@ impl_getter! {
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 }
 
-pub struct Rows (
+pub struct Rows(
     pub PB11<Input<PullDown>>,
     pub PB10<Input<PullDown>>,
     pub PB1<Input<PullDown>>,

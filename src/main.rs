@@ -27,10 +27,12 @@ macro_rules! dbg {
     };
 }
 
-mod debounce;
-mod hid;
-mod keyboard;
-mod matrix;
+pub mod debounce;
+pub mod hid;
+pub mod key_code;
+pub mod keyboard;
+pub mod layout;
+pub mod matrix;
 
 use crate::debounce::Debouncer;
 use crate::keyboard::Keyboard;
@@ -146,17 +148,16 @@ const APP: () = {
 
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
-            let new = [
-                data[0][0] as u8 | (data[0][1] as u8) << 1 | (data[0][2] as u8) << 2 | (data[0][3] as u8) << 3 | (data[0][4] as u8) << 4,
-                0,
-                if data[1][2] { 0x1b } else { 0 },
-                if data[1][3] { 0x06 } else { 0 },
-                if data[1][4] { 0x19 } else { 0 },
-                if data[2][0] { 0x39 } else { 0 },
-                0,
-                0,
-            ];
-            while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(&new)) {}
+            let mut report = key_code::KbHidReport::default();
+            data.iter()
+                .enumerate()
+                .flat_map(|(y, r)| {
+                    r.iter()
+                        .enumerate()
+                        .filter_map(move |(x, &b)| if b { Some((x, y)) } else { None })
+                })
+                .for_each(|(x, y)| report.pressed(layout::LAYOUT[x][y]));
+            while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
         }
     }
 };
