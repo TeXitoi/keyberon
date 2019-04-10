@@ -36,6 +36,7 @@ pub mod matrix;
 
 use crate::debounce::Debouncer;
 use crate::keyboard::Keyboard;
+use crate::matrix::{Matrix, PressedKeys};
 use rtfm::app;
 use stm32f103xx_usb::UsbBus;
 use stm32f1xx_hal::prelude::*;
@@ -56,9 +57,9 @@ const PID: u16 = 0x16c0;
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
     static mut USB_CLASS: KeyboardHidClass = ();
-    static mut MATRIX: matrix::Matrix = ();
-    static mut DEBOUNCER: Debouncer<[[bool; 5]; 12]> =
-        Debouncer::new([[false; 5]; 12], [[false; 5]; 12], 10);
+    static mut MATRIX: Matrix = ();
+    static mut DEBOUNCER: Debouncer<PressedKeys> =
+        Debouncer::new(PressedKeys::new(), PressedKeys::new(), 10);
 
     #[init]
     fn init() -> init::LateResources {
@@ -149,14 +150,9 @@ const APP: () = {
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
             let mut report = key_code::KbHidReport::default();
-            data.iter()
-                .enumerate()
-                .flat_map(|(y, r)| {
-                    r.iter()
-                        .enumerate()
-                        .filter_map(move |(x, &b)| if b { Some((x, y)) } else { None })
-                })
-                .for_each(|(x, y)| report.pressed(layout::LAYOUT[x][y]));
+            for (i, j) in data.iter_pressed() {
+                report.pressed(layout::LAYOUT[i][j]);
+            }
             while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
         }
     }

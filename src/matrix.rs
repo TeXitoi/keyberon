@@ -85,13 +85,30 @@ impl Matrix {
         cols.map_mut(|c| c.set_low());
         Self { cols, rows }
     }
-    pub fn get(&mut self) -> [[bool; 5]; 12] {
+    pub fn get(&mut self) -> PressedKeys {
         let rows = &self.rows;
-        self.cols.map_mut(|c| {
+        PressedKeys(self.cols.map_mut(|c| {
             c.set_high();
             let row = rows.map(|r| r.is_high());
             c.set_low();
             row
-        })
+        }))
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub struct PressedKeys(pub [[bool; 5]; 12]);
+impl PressedKeys {
+    pub const fn new() -> Self {
+        Self([[false; 5]; 12])
+    }
+    pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
+        self.0.iter()
+            .enumerate()
+            .flat_map(|(j, r)| {
+                r.iter()
+                    .enumerate()
+                    .filter_map(move |(i, &b)| if b { Some((i, j)) } else { None })
+            })
     }
 }
