@@ -1,5 +1,5 @@
-// Copyright 2019 Robin Krahl <robin.krahl@ireas.org>
-// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright 2019 Robin Krahl <robin.krahl@ireas.org>, Guillaume Pinot <texitoi@texitoi.eu>
+// SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use usb_device::bus::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
 use usb_device::class::{ControlIn, ControlOut, UsbClass};
