@@ -6,5 +6,5 @@ pub static LAYOUT: [[KeyCode; 12]; 5] = [
     [Tab,      Q,   W,   E,   R,     T,    Y,     U,     I,   O,    P,     LBracket],
     [RBracket, A,   S,   D,   F,     G,    H,     J,     K,   L,    SColon,Quote   ],
     [Equal,    Z,   X,   C,   V,     B,    N,     M,    Comma,Dot,  Slash, Bslash  ],
-    [LCtrl,CapsLock,LGui,LAlt,LShift,Space,BSpace,RShift,RAlt,Enter,Delete,RCtrl   ],
+    [LCtrl,CapsLock,LGui,LAlt,Space,LShift,RShift,Enter,RAlt,BSpace,Delete,RCtrl   ],
 ];
