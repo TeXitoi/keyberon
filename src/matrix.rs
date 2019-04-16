@@ -103,12 +103,10 @@ impl PressedKeys {
         Self([[false; 5]; 12])
     }
     pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
-        self.0.iter()
-            .enumerate()
-            .flat_map(|(j, r)| {
-                r.iter()
-                    .enumerate()
-                    .filter_map(move |(i, &b)| if b { Some((i, j)) } else { None })
-            })
+        self.0.iter().enumerate().flat_map(|(j, r)| {
+            r.iter()
+                .enumerate()
+                .filter_map(move |(i, &b)| if b { Some((i, j)) } else { None })
+        })
     }
 }
