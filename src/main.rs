@@ -27,6 +27,7 @@ macro_rules! dbg {
     };
 }
 
+pub mod action;
 pub mod debounce;
 pub mod hid;
 pub mod key_code;
@@ -150,8 +151,8 @@ const APP: () = {
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
             let mut report = key_code::KbHidReport::default();
-            for (i, j) in data.iter_pressed() {
-                report.pressed(layout::LAYOUT[i][j]);
+            for kc in layout::LAYOUT.key_codes(data.iter_pressed()) {
+                report.pressed(kc);
             }
             while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
         }

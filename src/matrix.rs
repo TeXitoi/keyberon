@@ -102,7 +102,7 @@ impl PressedKeys {
     pub const fn new() -> Self {
         Self([[false; 5]; 12])
     }
-    pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + 'a {
+    pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + Clone + 'a {
         self.0.iter().enumerate().flat_map(|(j, r)| {
             r.iter()
                 .enumerate()
