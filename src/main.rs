@@ -60,7 +60,7 @@ const APP: () = {
     static mut USB_CLASS: KeyboardHidClass = ();
     static mut MATRIX: Matrix = ();
     static mut DEBOUNCER: Debouncer<PressedKeys> =
-        Debouncer::new(PressedKeys::new(), PressedKeys::new(), 10);
+        Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5);
     static mut LAYOUT: layout::Layout = layout::Layout::new(layout::LAYERS);
 
     #[init]
