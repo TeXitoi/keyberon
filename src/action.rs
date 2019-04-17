@@ -28,6 +28,6 @@ pub const fn k(kc: KeyCode) -> Action {
 pub const fn l(layer: usize) -> Action {
     Action::Layer(layer)
 }
-pub const fn d(layer: usize)-> Action {
+pub const fn d(layer: usize) -> Action {
     Action::DefaultLayer(layer)
 }

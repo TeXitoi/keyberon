@@ -1,5 +1,5 @@
 use crate::action::Action::{self, *};
-use crate::action::{k, l, d};
+use crate::action::{d, k, l};
 use crate::key_code::KeyCode::{self, *};
 
 #[rustfmt::skip]
