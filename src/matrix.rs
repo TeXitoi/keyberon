@@ -1,4 +1,4 @@
-use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullDown, PushPull};
+use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
 use stm32f1xx_hal::prelude::*;
 
 macro_rules! impl_getter {
@@ -42,36 +42,36 @@ macro_rules! impl_getter {
 }
 
 pub struct Cols(
-    pub PB12<Output<PushPull>>,
-    pub PB13<Output<PushPull>>,
-    pub PB14<Output<PushPull>>,
-    pub PB15<Output<PushPull>>,
-    pub PA8<Output<PushPull>>,
-    pub PA9<Output<PushPull>>,
-    pub PA10<Output<PushPull>>,
-    pub PB5<Output<PushPull>>,
-    pub PB6<Output<PushPull>>,
-    pub PB7<Output<PushPull>>,
-    pub PB8<Output<PushPull>>,
-    pub PB9<Output<PushPull>>,
+    pub PB12<Input<PullUp>>,
+    pub PB13<Input<PullUp>>,
+    pub PB14<Input<PullUp>>,
+    pub PB15<Input<PullUp>>,
+    pub PA8<Input<PullUp>>,
+    pub PA9<Input<PullUp>>,
+    pub PA10<Input<PullUp>>,
+    pub PB5<Input<PullUp>>,
+    pub PB6<Input<PullUp>>,
+    pub PB7<Input<PullUp>>,
+    pub PB8<Input<PullUp>>,
+    pub PB9<Input<PullUp>>,
 );
 impl_getter! {
     Cols,
-    _embedded_hal_digital_OutputPin,
+    _embedded_hal_digital_InputPin,
     12,
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 }
 
 pub struct Rows(
-    pub PB11<Input<PullDown>>,
-    pub PB10<Input<PullDown>>,
-    pub PB1<Input<PullDown>>,
-    pub PB0<Input<PullDown>>,
-    pub PA7<Input<PullDown>>,
+    pub PB11<Output<PushPull>>,
+    pub PB10<Output<PushPull>>,
+    pub PB1<Output<PushPull>>,
+    pub PB0<Output<PushPull>>,
+    pub PA7<Output<PushPull>>,
 );
 impl_getter! {
     Rows,
-    _embedded_hal_digital_InputPin,
+    _embedded_hal_digital_OutputPin,
     5,
     [0, 1, 2, 3, 4]
 }
@@ -81,32 +81,32 @@ pub struct Matrix {
     rows: Rows,
 }
 impl Matrix {
-    pub fn new(mut cols: Cols, rows: Rows) -> Self {
-        cols.map_mut(|c| c.set_low());
+    pub fn new(cols: Cols, mut rows: Rows) -> Self {
+        rows.map_mut(|c| c.set_high());
         Self { cols, rows }
     }
     pub fn get(&mut self) -> PressedKeys {
-        let rows = &self.rows;
-        PressedKeys(self.cols.map_mut(|c| {
-            c.set_high();
-            let row = rows.map(|r| r.is_high());
+        let cols = &self.cols;
+        PressedKeys(self.rows.map_mut(|c| {
             c.set_low();
-            row
+            let col = cols.map(|r| r.is_low());
+            c.set_high();
+            col
         }))
     }
 }
 
 #[derive(PartialEq, Eq)]
-pub struct PressedKeys(pub [[bool; 5]; 12]);
+pub struct PressedKeys(pub [[bool; 12]; 5]);
 impl PressedKeys {
     pub const fn new() -> Self {
-        Self([[false; 5]; 12])
+        Self([[false; 12]; 5])
     }
     pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + Clone + 'a {
-        self.0.iter().enumerate().flat_map(|(j, r)| {
+        self.0.iter().enumerate().flat_map(|(i, r)| {
             r.iter()
                 .enumerate()
-                .filter_map(move |(i, &b)| if b { Some((i, j)) } else { None })
+                .filter_map(move |(j, &b)| if b { Some((i, j)) } else { None })
         })
     }
 }
