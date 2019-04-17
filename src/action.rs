@@ -4,26 +4,27 @@ use crate::key_code::KeyCode;
 pub enum Action {
     No,
     Trans,
-    KC(KeyCode),
-    Lt(usize),
+    KeyCode(KeyCode),
+    Layer(usize),
+    DefaultLayer(usize),
 }
 impl Action {
     pub fn layout(self) -> Option<usize> {
         match self {
-            Action::Lt(l) => Some(l),
+            Action::Layer(l) => Some(l),
             _ => None,
         }
     }
     pub fn key_code(self) -> Option<KeyCode> {
         match self {
-            Action::KC(kc) => Some(kc),
+            Action::KeyCode(kc) => Some(kc),
             _ => None,
         }
     }
 }
 pub const fn k(kc: KeyCode) -> Action {
-    Action::KC(kc)
+    Action::KeyCode(kc)
 }
 pub const fn l(layer: usize) -> Action {
-    Action::Lt(layer)
+    Action::Layer(layer)
 }

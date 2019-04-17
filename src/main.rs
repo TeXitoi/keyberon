@@ -61,6 +61,7 @@ const APP: () = {
     static mut MATRIX: Matrix = ();
     static mut DEBOUNCER: Debouncer<PressedKeys> =
         Debouncer::new(PressedKeys::new(), PressedKeys::new(), 10);
+    static mut LAYOUT: layout::Layout = layout::Layout::new(layout::LAYERS);
 
     #[init]
     fn init() -> init::LateResources {
@@ -142,7 +143,7 @@ const APP: () = {
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
     }
 
-    #[interrupt(priority = 1, resources = [USB_CLASS, MATRIX, DEBOUNCER])]
+    #[interrupt(priority = 1, resources = [USB_CLASS, MATRIX, DEBOUNCER, LAYOUT])]
     fn TIM3() {
         unsafe { &*stm32f1xx_hal::stm32::TIM3::ptr() }
             .sr
@@ -151,7 +152,7 @@ const APP: () = {
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
             let mut report = key_code::KbHidReport::default();
-            for kc in layout::LAYOUT.key_codes(data.iter_pressed()) {
+            for kc in resources.LAYOUT.key_codes(data.iter_pressed()) {
                 report.pressed(kc);
             }
             while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
