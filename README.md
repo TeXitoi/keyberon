@@ -1,5 +1,3 @@
- Open
-TeXitoi opened this Issue 3 days ago · 1 comment
 # Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon)
 
 A hand wired ortholinear mechanical keyboard with a firmware in rust.
