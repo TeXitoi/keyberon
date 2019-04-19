@@ -38,7 +38,7 @@ So, I have to find such a name. In the mechanical keyboard community, "keeb" is 
 
 ## What is this black and white pattern on your keyboard?
 
-I'm fascinated by [isomorphic keyboards](https://en.wikipedia.org/wiki/Isomorphic_keyboard). Thus, I've searched a bit which vectors can do a great isomorphic keyboard on a 12x5 grid. After some trial and errors, I found that a minor third left, and a major third up is promising. Then, searching for an origin, I found one that do a great symetry on the home row using the colors of the piano keys.
+I'm fascinated by [isomorphic keyboards](https://en.wikipedia.org/wiki/Isomorphic_keyboard). Thus, I've searched a bit which vectors can do a great isomorphic keyboard on a 12x5 grid. After some trial and errors, I found that a major third left, and a minor third up is promising. Then, searching for an origin, I found one that do a great symetry on the home row using the colors of the piano keys.
 
 So, the black keys on the home row are G#, the whites at left of G# are C, and the whites above G# are B, and so on.
 
