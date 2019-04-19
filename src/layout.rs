@@ -1,6 +1,10 @@
 use crate::action::Action::{self, *};
-use crate::action::{d, k, l};
+use crate::action::{d, k, l, m};
 use crate::key_code::KeyCode::{self, *};
+
+const CUT: Action = m(&[LShift, Delete]);
+const COPY: Action = m(&[LCtrl, Insert]);
+const PASTE: Action = m(&[LShift, Insert]);
 
 #[rustfmt::skip]
 pub static LAYERS: [[[Action; 12]; 5]; 2] = [
@@ -14,7 +18,7 @@ pub static LAYERS: [[[Action; 12]; 5]; 2] = [
         [k(F1),      k(F2),    k(F3),k(F4),k(F5),k(F6),k(F7),k(F8),k(F9),k(F10), k(F11), k(F12)   ],
         [k(Escape),  Trans,    Trans,Trans,Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(PgUp)  ],
         [d(0),       d(1),     Trans,Trans,Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(PgDown)],
-        [k(CapsLock),k(Delete),Trans,Trans,Trans,Trans,Trans,Trans,Trans,k(Home),k(Up),  k(End)   ],
+        [k(CapsLock),k(Delete),CUT,  COPY, PASTE,Trans,Trans,Trans,Trans,k(Home),k(Up),  k(End)   ],
         [Trans,      Trans,    Trans,Trans,Trans,Trans,Trans,Trans,Trans,k(Left),k(Down),k(Right) ],
     ]
 ];
@@ -36,13 +40,13 @@ impl Layout {
         kp: impl Iterator<Item = (usize, usize)> + Clone + 'a,
     ) -> impl Iterator<Item = KeyCode> + 'a {
         let layer = self.layer(kp.clone()).unwrap_or(self.default_layer);
-        kp.filter_map(move |(i, j)| match self.layers[layer][i][j] {
-            Trans => self.layers[self.default_layer][i][j].key_code(),
+        kp.flat_map(move |(i, j)| match self.layers[layer][i][j] {
+            Trans => self.layers[self.default_layer][i][j].key_codes(),
             DefaultLayer(default) => {
                 self.default_layer = default;
-                None
+                DefaultLayer(default).key_codes()
             }
-            kc => kc.key_code(),
+            kc => kc.key_codes(),
         })
     }
     fn layer(&self, kp: impl Iterator<Item = (usize, usize)>) -> Option<usize> {

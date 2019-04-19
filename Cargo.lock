@@ -85,6 +85,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "embedded-hal"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,6 +131,7 @@ dependencies = [
  "cortex-m-rt 0.6.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rtfm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-semihosting 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "either 1.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "panic-semihosting 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "stm32f103xx-usb 0.1.0 (git+https://github.com/mvirkkunen/stm32f103xx-usb.git)",
  "stm32f1xx-hal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -325,6 +331,7 @@ dependencies = [
 "checksum cortex-m-rtfm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "12b165b9c6ab11aebd304fac4dd6ef10f69dbac2e9f6858e4c98da3588e70412"
 "checksum cortex-m-rtfm-macros 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a25f736f4c63385e923036a9708a8447b21a7a46299bdd3678f81d1f36d7c990"
 "checksum cortex-m-semihosting 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d1dc2abec1a772e8bb697cad17d5710f180043caf8939820f0f6ba4b7ae2a4b5"
+"checksum either 1.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "5527cfe0d098f36e3f8839852688e63c8fff1c90b2b405aef730615f9a7bcf7b"
 "checksum embedded-hal 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "9880e55238830314d41d88f1ac7a819d495799c3cc3bc392cc172bab26428c33"
 "checksum generic-array 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8107dafa78c80c848b71b60133954b4a58609a3a1a5f9af037ecc7f67280f369"
 "checksum hash32 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "12d790435639c06a7b798af9e1e331ae245b7ef915b92f70a39b4cf8c00686af"
