@@ -4,6 +4,8 @@ A hand wired ortholinear mechanical keyboard with a firmware in rust.
 
 ![photo](images/keyberon.jpg)
 
+You can [build](BUILDING.md) this keyboard yourself quite easilly.
+
 ## The case
 
 The [OpenSCad files](cad/) are a totally parametric design. You can generate a grid of keys of any size by modifying the parameters. It is designed to be as low as possible.
