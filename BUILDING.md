@@ -54,25 +54,25 @@ Place the swiches. The hole for the LED should be on your side when you tap on t
 
 Now, you have to solder the diodes.
 
-![loop on diode](images/01 - loop on diode.jpg)
+![loop on diode](images/01%20-%20loop%20on%20diode.jpg)
 
 Create a loop on the diode. I use a nail on some piece of wood for that. The loop is on the anode (the leg at the opposite side of the black mark).
 
-![diode position](images/02 - diode positionning.jpg)
+![diode position](images/02%20-%20diode%20positionning.jpg)
 
 Place the diode on the left pin of the switch after bending the pin down (the pins must not be higher that the plot of the swich, else they will touch the back of the case). Place a complete row, and then solder on the loop.
 
-![row soldering](images/03 - row soldering.jpg)
+![row soldering](images/03%20-%20row%20soldering.jpg)
 
 Bend the cathode legs as on the photo. Solder the cathodes together. Cut the useless wires except the rightmost cathode cross.
 
-![column detail](images/05 - column detail.jpg)
+![column detail](images/05%20-%20column%20detail.jpg)
 
 Take a piece of polyurethane-enameled copper wire a bit longer than a column. Do 2 turns arround the right pin of the lowest switch of the column. Pass the wire under the cathode line. 2 turn arround the next switch. pass under the cathode line... for the whole column. Solder the loops. Cut the excess of wire.
 
 You should now have something like that:
 
-![column soldering](images/04 - column soldering.jpg)
+![column soldering](images/04%20-%20column%20soldering.jpg)
 
 Check the connections with the multimeter in Ohmmeter mode: ground on a cathode line. Touch a column: no connection. Press the switch at the intersection of the column and row: connection. Test for each switch, correcting the bad contact if it's not working.
 
@@ -101,7 +101,7 @@ Cut the excess of wire and the last cathode crosses.
 
 You should now have something like that:
 
-![wiring](/images/06 - wiring.jpg)
+![wiring](/images/06%20-%20wiring.jpg)
 
 Plug to a computer a check each switch (switch with layer switching will not generate an event, you'll need to touch another switch to gen an event on the computer. Fix the possibly broken connections.
 
