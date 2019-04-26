@@ -173,7 +173,7 @@ module keys() {
             translate([19*((nb_col-1)/2-i), 19*(j-(nb_row-1)/2), 0]) {
                 note=(i*4+j*3+10)%12;
                 c = note==1||note==3||note==6||note==8||note==10 ? [0.2,0.2,0.2] : [0.9,0.9,0.9];
-                color(c) rotate([180,0,0]) key();
+                color(c) rotate([180,0,0]) keycap();
             }
         }
     }
