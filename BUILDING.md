@@ -20,11 +20,11 @@ You can find everything on [Aliexpress](https://my.aliexpress.com/wishlist/wish_
 
 ## Printing the case
 
-You can directly print the [case](cad/case.stl) and the [back](cad/back.stl). You'll need a printed that can print a 250mm wide piece. Else, you can try the 2 part design but be aware that It's not tested.
+You can directly print the [case](cad/case.stl) and the [back](cad/back.stl). You'll need a printed that can print a 250mm wide piece. Else, you can try the 2 part design but be aware that it's not tested.
 
-If you want to change the size of the grid, you can edit the [source file](cad/case.scad). The number of row and columns are at the begining of the file. Just change that to whatever you want (at least 3 rows and 1 columns). With make and openscad installed, you can just type `make` in the `cad/` directory to regenerate the STL files.
+If you want to change the size of the grid, you can edit the [source file](cad/case.scad). The numbers of rows and columns are at the begining of the file. Just change them to whatever you want (at least 3 rows and 1 column). With make and openscad installed, you can just type `make` in the `cad/` directory to regenerate the STL files.
 
-Not support is needed. I print with 20% infill and 0.2mm layers.
+No support is needed. I print with 20% infill and 0.2mm layers.
 
 ## Compiling and flashing
 
@@ -44,13 +44,15 @@ cargo run --release
 
 Now, If you connect the blue pill board to a computer using the micro USB port, the computer should detect a keyboard. You can test it by pushing the caps lock key on your keyboard, the green led of the blue pill should light up. You can also simulate a button press by connecting PA7 and PA8, your computer should register a space key press.
 
-As the blue pill [doesn't respect the USB specifications](https://wiki.stm32duino.com/index.php?title=Blue_Pill#Hardware_installation), you need to fix it. Even if that's working on your computer, you'll want that your keyboard works everywhere. A 1.8kΩ resistor between PA12 and 3.3V can do the job.
+As the blue pill [doesn't respect the USB specifications](https://wiki.stm32duino.com/index.php?title=Blue_Pill#Hardware_installation), the computer may not detect the USB device. you can put (but no soldering yet!) a 1.8kΩ resistor between PA12 and 3.3V.
 
 ## Building the keyboard
 
-First, screw the back and the case to tap the holes. It's easier to do that first when the swiches are not mounted. Remove the back.
+As the blue pill is quite tall, you have to remove the boot pins. You can follow [this tutorial](https://docs.cannonkeys.com/bluepill-mod/) or do whatever you want (I've removed the pins and soldered a wire between the needed holes).
 
-Place the swiches. The hole for the LED should be on your side when you tap on the keyboard. Be sure that the switches are not to tight, else the switch will not take its position after a key press. Sand the hole if it is too tight.
+Then, screw the back and the case to tap the holes. It's easier to do that first when the swiches are not mounted. Remove the back.
+
+Place the swiches. The hole for the LED should be on your side when you tap on the keyboard. Be sure that the switches are not to tight, else the switch will not go back to its position correctly after a key press. Sand the hole if it is too tight.
 
 Now, you have to solder the diodes.
 
@@ -95,7 +97,7 @@ Now, connect the rows and columns to the blue pill:
  - Column 11: PB8
  - Column 12 (right on the switch side, left on the wire side): PB9
 
-First solder the wires on the blue pill and cut the excess of wire. Then, solder the 1.8kΩ resistor between PA12 and 3.3V. put the blue pill to its pocket. Solder the wires to the matrix. For the columns, do a loop arround the uncutted cathode cross and melt the solder. For the rows, do a loop arround a row pin and remelt the solder.
+First solder the wires on the blue pill and cut the excess of wire. Then, solder the 1.8kΩ resistor between PA12 and 3.3V. Put the blue pill in its pocket. Solder the wires to the matrix. For the columns, do a loop arround the uncutted cathode cross and remelt the solder. For the rows, do a loop arround a row pin and remelt the solder.
 
 Cut the excess of wire and the last cathode crosses.
 
@@ -103,6 +105,6 @@ You should now have something like that:
 
 ![wiring](/images/06%20-%20wiring.jpg)
 
-Plug to a computer a check each switch (switch with layer switching will not generate an event, you'll need to touch another switch to gen an event on the computer. Fix the possibly broken connections.
+Plug to a computer a check each switch (switch with layer switching will not generate an event, you'll need to touch another switch to gen an event on the computer). Fix the possibly broken connections.
 
 You're done! Screw the back, put the keycaps and start typing!
