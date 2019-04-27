@@ -15,11 +15,11 @@ pub static LAYERS: [[[Action; 12]; 5]; 2] = [
         [k(Equal),   k(Z),  k(X),  k(C),   k(V),    k(B),     k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
         [k(LCtrl),   l(1), k(LGui),k(LAlt),k(Space),k(LShift),k(RShift),k(Enter),k(RAlt),k(BSpace),k(Escape),k(RCtrl)  ],
     ], [
-        [k(F1),      k(F2),    k(F3),k(F4),k(F5),k(F6),k(F7),k(F8),k(F9),k(F10), k(F11), k(F12)   ],
-        [k(Escape),  Trans,    Trans,Trans,Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(PgUp)  ],
-        [d(0),       d(1),     Trans,Trans,Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(PgDown)],
-        [k(CapsLock),k(Delete),CUT,  COPY, PASTE,Trans,Trans,Trans,Trans,k(Home),k(Up),  k(End)   ],
-        [Trans,      Trans,    Trans,Trans,Trans,Trans,Trans,Trans,Trans,k(Left),k(Down),k(Right) ],
+        [k(F1),      k(F2),    k(F3),k(F4),k(F5),k(F6),k(F7),k(F8),  k(F9),  k(F10), k(F11),  k(F12)   ],
+        [k(Escape),  Trans,    Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,  Trans,   k(PgUp)  ],
+        [d(0),       d(1),     Trans,Trans,Trans,Trans,Trans,k(Left),k(Down),k(Up),  k(Right),k(PgDown)],
+        [k(CapsLock),k(Delete),CUT,  COPY, PASTE,Trans,Trans,Trans,  Trans,  k(Home),k(Up),   k(End)   ],
+        [Trans,      Trans,    Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(Left),k(Down), k(Right) ],
     ]
 ];
 
