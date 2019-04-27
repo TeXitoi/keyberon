@@ -7,7 +7,7 @@ For this project, you'll need
  - 60 1u keycaps;
  - 60 1N4148 diodes;
  - 1 1.8kΩ resistor;
- - a [blue pill board](https://wiki.stm32duino.com/index.php?title=Blue_Pill) featuring a STM32F103C8 microcontroller (20KiB RAM, 64 KiB flash, ARM Cortex M3 @72MHz);
+ - a [blue pill board](https://wiki.stm32duino.com/index.php?title=Blue_Pill) featuring a STM32F103C8 micro-controller (20KiB RAM, 64 KiB flash, ARM Cortex M3 @72MHz);
  - a micro USB cable;
  - a [3D printed case](cad/);
  - 7 2mm wood screws;
@@ -22,7 +22,7 @@ You can find everything on [Aliexpress](https://my.aliexpress.com/wishlist/wish_
 
 You can directly print the [case](cad/case.stl) and the [back](cad/back.stl). You'll need a printed that can print a 250mm wide piece. Else, you can try the 2 part design but be aware that it's not tested.
 
-If you want to change the size of the grid, you can edit the [source file](cad/case.scad). The numbers of rows and columns are at the begining of the file. Just change them to whatever you want (at least 3 rows and 1 column). With make and openscad installed, you can just type `make` in the `cad/` directory to regenerate the STL files.
+If you want to change the size of the grid, you can edit the [source file](cad/case.scad). The numbers of rows and columns are at the beginning of the file. Just change them to whatever you want (at least 3 rows and 1 column). With make and openscad installed, you can just type `make` in the `cad/` directory to regenerate the STL files.
 
 No support is needed. I print with 20% infill and 0.2mm layers.
 
@@ -50,9 +50,9 @@ As the blue pill [doesn't respect the USB specifications](https://wiki.stm32duin
 
 As the blue pill is quite tall, you have to remove the boot pins. You can follow [this tutorial](https://docs.cannonkeys.com/bluepill-mod/) or do whatever you want (I've removed the pins and soldered a wire between the needed holes).
 
-Then, screw the back and the case to tap the holes. It's easier to do that first when the swiches are not mounted. Remove the back.
+Then, screw the back and the case to tap the holes. It's easier to do that first when the switches are not mounted. Remove the back.
 
-Place the swiches. The hole for the LED should be on your side when you tap on the keyboard. Be sure that the switches are not to tight, else the switch will not go back to its position correctly after a key press. Sand the hole if it is too tight.
+Place the switches. The hole for the LED should be on your side when you tap on the keyboard. Be sure that the switches are not to tight, else the switch will not go back to its position correctly after a key press. Sand the hole if it is too tight.
 
 Now, you have to solder the diodes.
 
@@ -62,7 +62,7 @@ Create a loop on the diode. I use a nail on some piece of wood for that. The loo
 
 ![diode position](images/02%20-%20diode%20positionning.jpg)
 
-Place the diode on the left pin of the switch after bending the pin down (the pins must not be higher that the plot of the swich, else they will touch the back of the case). Place a complete row, and then solder on the loop.
+Place the diode on the left pin of the switch after bending the pin down (the pins must not be higher that the plot of the switch, else they will touch the back of the case). Place a complete row, and then solder on the loop.
 
 ![row soldering](images/03%20-%20row%20soldering.jpg)
 
@@ -70,7 +70,7 @@ Bend the cathode legs as on the photo. Solder the cathodes together. Cut the use
 
 ![column detail](images/05%20-%20column%20detail.jpg)
 
-Take a piece of polyurethane-enameled copper wire a bit longer than a column. Do 2 turns arround the right pin of the lowest switch of the column. Pass the wire under the cathode line. 2 turn arround the next switch. pass under the cathode line... for the whole column. Solder the loops. Cut the excess of wire.
+Take a piece of polyurethane-enameled copper wire a bit longer than a column. Do 2 turns around the right pin of the lowest switch of the column. Pass the wire under the cathode line. 2 turn around the next switch. pass under the cathode line... for the whole column. Solder the loops. Cut the excess of wire.
 
 You should now have something like that:
 
@@ -97,7 +97,7 @@ Now, connect the rows and columns to the blue pill:
  - Column 11: PB8
  - Column 12 (right on the switch side, left on the wire side): PB9
 
-First solder the wires on the blue pill and cut the excess of wire. Then, solder the 1.8kΩ resistor between PA12 and 3.3V. Put the blue pill in its pocket. Solder the wires to the matrix. For the columns, do a loop arround the uncutted cathode cross and remelt the solder. For the rows, do a loop arround a row pin and remelt the solder.
+First solder the wires on the blue pill and cut the excess of wire. Then, solder the 1.8kΩ resistor between PA12 and 3.3V. Put the blue pill in its pocket. Solder the wires to the matrix. For the columns, do a loop around the uncutted cathode cross and remelt the solder. For the rows, do a loop around a row pin and remelt the solder.
 
 Cut the excess of wire and the last cathode crosses.
 
