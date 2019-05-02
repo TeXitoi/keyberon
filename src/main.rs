@@ -41,11 +41,11 @@ use crate::matrix::{Matrix, PressedKeys};
 use rtfm::app;
 use stm32f103xx_usb::UsbBus;
 use stm32f1xx_hal::prelude::*;
+use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, timer};
 use usb_device::bus;
 use usb_device::class::UsbClass;
 use usb_device::prelude::*;
-use stm32f1xx_hal::stm32;
 
 type KeyboardHidClass = hid::HidClass<'static, UsbBus, Keyboard>;
 type Led = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
