@@ -45,6 +45,7 @@ use stm32f1xx_hal::{gpio, timer};
 use usb_device::bus;
 use usb_device::class::UsbClass;
 use usb_device::prelude::*;
+use stm32f1xx_hal::stm32;
 
 type KeyboardHidClass = hid::HidClass<'static, UsbBus, Keyboard>;
 type Led = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
@@ -62,6 +63,7 @@ const APP: () = {
     static mut DEBOUNCER: Debouncer<PressedKeys> =
         Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5);
     static mut LAYOUT: layout::Layout = layout::Layout::new(layout::LAYERS);
+    static mut TIMER: timer::Timer<stm32::TIM3> = ();
 
     #[init]
     fn init() -> init::LateResources {
@@ -107,6 +109,7 @@ const APP: () = {
         init::LateResources {
             USB_DEV: usb_dev,
             USB_CLASS: usb_class,
+            TIMER: timer,
             MATRIX: matrix::Matrix::new(
                 matrix::Cols(
                     gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
@@ -143,11 +146,9 @@ const APP: () = {
         usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
     }
 
-    #[interrupt(priority = 1, resources = [USB_CLASS, MATRIX, DEBOUNCER, LAYOUT])]
+    #[interrupt(priority = 1, resources = [USB_CLASS, MATRIX, DEBOUNCER, LAYOUT, TIMER])]
     fn TIM3() {
-        unsafe { &*stm32f1xx_hal::stm32::TIM3::ptr() }
-            .sr
-            .modify(|_, w| w.uif().clear_bit());
+        resources.TIMER.clear_update_interrupt_flag();
 
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
