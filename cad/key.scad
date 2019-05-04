@@ -1,23 +1,23 @@
 use <utils.scad>
 
+module keycap_shape(d1=18.3, d2=12, h=7.5, r=1.5) {
+  hull() {
+    linear_extrude(1, scale=0.1) square([d1, d1], center=true);
+    translate([0, 0, h])
+      rotate([180,0,0])
+      linear_extrude(1, scale=0.1)
+      rounded_square([d2,d2], r=r, center=true);
+  }
+}
+
 module keycap(down=false) {
+  w=1.2;
   translate([0,0,down?1:5]) {
     difference() {
-      hull() {
-        linear_extrude(1, scale=0.1) square([18.3, 18.3], center=true);
-        translate([0, 0, 7.4])
-          rotate([180,0,0])
-          linear_extrude(1, scale=0.1)
-          rounded_square([12,12], r=1.5, center=true);
-      }
-      hull() {
-        wall=1.6;
-        translate([0,0,-0.1]) linear_extrude(1, scale=0.1)
-          square([18.3-2*wall, 18.3-2*wall], center=true);
-        translate([0, 0, 7.4-wall])
-          rotate([180,0,0])
-          linear_extrude(1, scale=0.1)
-          square([(12-2*wall)/0.85,(12-2*wall)/0.85], center=true);
+      keycap_shape(d1=18.3, d2=12, h=7.5, r=1.5);
+      intersection() {
+        translate([0,0,-0.01]) keycap_shape(d1=18.3-2*w, d2=12-2*w, h=7.5, r=1.5-w);
+        cube([20, 20, (7.5-w)*2], center=true);
       }
     }
     difference() {
