@@ -16,13 +16,13 @@ module keycap(down=false) {
     difference() {
       keycap_shape(d1=18.3, d2=12, h=7.5, r=1.5);
       intersection() {
-        translate([0,0,-0.01]) keycap_shape(d1=18.3-2*w, d2=12-2*w, h=7.5, r=1.5-w);
+        translate([0,0,-0.01]) keycap_shape(d1=18.3-2*w, d2=12-2*w, h=7.5, r=0);
         cube([20, 20, (7.5-w)*2], center=true);
       }
     }
     difference() {
       cylinder(h=7, d=5.5);
-      rotate([0,0,45]) cube([3.5, 3.5, 20], center=true);
+      rotate([0,0,45]) cube([3.3, 3.3, 20], center=true);
     }
   }
 }
