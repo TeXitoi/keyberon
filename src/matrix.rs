@@ -89,6 +89,7 @@ impl Matrix {
         let cols = &self.cols;
         PressedKeys(self.rows.map_mut(|c| {
             c.set_low();
+            cortex_m::asm::delay(5 * 48); // 5µs
             let col = cols.map(|r| r.is_low());
             c.set_high();
             col
