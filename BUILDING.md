@@ -11,6 +11,7 @@ For this project, you'll need
  - a micro USB cable;
  - a [3D printed case](cad/);
  - 7 2mm wood screws;
+ - polyurethane-enameled copper wire;
  - soldering set;
  - multimeter.
  
