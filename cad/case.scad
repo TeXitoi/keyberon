@@ -86,11 +86,14 @@ module case() {
                 cube([switch_hole,switch_hole,15], center=true);
                 translate([0,0,1.5]) cube([5, switch_hole+3, 10], center=true);
             }
+            // chamfer for elephant foots
+            translate([0,0,0.4]) rotate([180,0,0]) linear_extrude(switch_hole, scale=3)
+              square([switch_hole,switch_hole], center=true);
         }
 
         // screw holes
         hole_placement() {
-            cylinder(d=1.8, h=4*2, center=true);
+          cylinder(d=1.8, h=(case_depth-back_thickness-1)*2, center=true);
         }
     }
 }
