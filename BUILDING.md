@@ -21,7 +21,7 @@ You can find everything on [Aliexpress](https://my.aliexpress.com/wishlist/wish_
 
 ## Printing the case
 
-You can directly print the [case](cad/case.stl) and the [back](cad/back.stl). You'll need a printed that can print a 250mm wide piece. Else, you can try the 2 part design but be aware that it's not tested.
+You can directly print the [case](cad/case.stl) and the [back](cad/back.stl). You'll need a printed that can print a 270mm wide piece.
 
 If you want to change the size of the grid, you can edit the [source file](cad/case.scad). The numbers of rows and columns are at the beginning of the file. Just change them to whatever you want (at least 3 rows and 1 column). With make and openscad installed, you can just type `make` in the `cad/` directory to regenerate the STL files.
 
