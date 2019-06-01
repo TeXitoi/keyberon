@@ -95,7 +95,7 @@ module blue_pill_pocket(under=2, over=3, open_under=false, open_over=false, led_
       translate([33, 0, (depth+pin_size)/2]) cube([25, 11, 3], center=true);
 
       // usb
-      translate([-54/2-0.5-30/2, 0, (depth+pin_size)/2]) {
+      translate([-54/2-1-30/2, 0, (depth+pin_size)/2]) {
         cube([30, 11, 9], center=true);
         cube([35, 7.5, 2.5], center=true);
       }

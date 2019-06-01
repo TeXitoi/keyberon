@@ -17,7 +17,7 @@ case_height=inter_switch*nb_row-(inter_switch-switch_hole)+border*2;
 bp_width=23;
 bp_height=53.5;
 bp_x=case_width/2+5.5;
-bp_y=case_height/2-53.5/2-1.5;
+bp_y=case_height/2-bp_height/2-1.25;
 mcu_width=bp_x-case_width/2+bp_width/2+border;
 mcu_height=60;
 cut_offset= nb_col%2==0 ? 0 : inter_switch/2;
@@ -52,7 +52,7 @@ module hole_placement() {
 
 module wire_hole(epsilon=0) {
     translate([bp_x-bp_width/2, bp_y, (case_depth-4-back_thickness+epsilon)/2+4])
-        cube([bp_width, bp_height-2*border+3, case_depth-4-back_thickness+epsilon], center=true);
+        cube([bp_width, bp_height-2*border+2.5, case_depth-4-back_thickness+epsilon], center=true);
 }
 
 module case() {
