@@ -9,7 +9,7 @@ stm32f1xx-hal = { version = "0.3", features = ["rt", "stm32f103" ] }
 cortex-m = "0.5"
 cortex-m-rt = { version = "0.6.6", features = ["device"] }
 panic-semihosting = "0.5"
-stm32f103xx-usb = { git = "https://github.com/mvirkkunen/stm32f103xx-usb.git" }
+stm32-usbd = { version = "0.3.0", features = ["stm32f103xx"] }
 usb-device = "0.2.0"
 cortex-m-rtfm = "0.4.1"
 cortex-m-semihosting = "0.3.2"

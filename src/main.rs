@@ -39,7 +39,7 @@ use crate::debounce::Debouncer;
 use crate::keyboard::Keyboard;
 use crate::matrix::{Matrix, PressedKeys};
 use rtfm::app;
-use stm32f103xx_usb::UsbBus;
+use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, timer};
@@ -47,7 +47,7 @@ use usb_device::bus;
 use usb_device::class::UsbClass;
 use usb_device::prelude::*;
 
-type KeyboardHidClass = hid::HidClass<'static, UsbBus, Keyboard>;
+type KeyboardHidClass = hid::HidClass<'static, UsbBusType, Keyboard>;
 type Led = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
 
 // Generic keyboard from
@@ -57,7 +57,7 @@ const PID: u16 = 0x16c0;
 
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
-    static mut USB_DEV: UsbDevice<'static, UsbBus> = ();
+    static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
     static mut USB_CLASS: KeyboardHidClass = ();
     static mut MATRIX: Matrix = ();
     static mut DEBOUNCER: Debouncer<PressedKeys> =
@@ -67,7 +67,7 @@ const APP: () = {
 
     #[init]
     fn init() -> init::LateResources {
-        static mut USB_BUS: Option<bus::UsbBusAllocator<UsbBus>> = None;
+        static mut USB_BUS: Option<bus::UsbBusAllocator<UsbBusType>> = None;
 
         let mut flash = device.FLASH.constrain();
         let mut rcc = device.RCC.constrain();
@@ -86,13 +86,16 @@ const APP: () = {
         let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
         led.set_high();
 
-        *USB_BUS = Some(UsbBus::usb_with_reset(
-            device.USB,
-            &mut rcc.apb1,
-            &clocks,
-            &mut gpioa.crh,
-            gpioa.pa12,
-        ));
+        // BluePill board has a pull-up resistor on the D+ line.
+        // Pull the D+ pin down to send a RESET condition to the USB bus.
+        let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
+        usb_dp.set_low();
+        cortex_m::asm::delay(clocks.sysclk().0 / 100);
+
+        let usb_dm = gpioa.pa11;
+        let usb_dp = usb_dp.into_floating_input(&mut gpioa.crh);
+
+        *USB_BUS = Some(UsbBus::new(device.USB,(usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
         let usb_class = hid::HidClass::new(Keyboard::new(led), &usb_bus);
@@ -101,7 +104,6 @@ const APP: () = {
             .product("Keyberon")
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
-        usb_dev.force_reset().expect("reset failed");
 
         let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
@@ -161,7 +163,7 @@ const APP: () = {
     }
 };
 
-fn usb_poll(usb_dev: &mut UsbDevice<'static, UsbBus>, keyboard: &mut KeyboardHidClass) {
+fn usb_poll(usb_dev: &mut UsbDevice<'static, UsbBusType>, keyboard: &mut KeyboardHidClass) {
     if usb_dev.poll(&mut [keyboard]) {
         keyboard.poll();
     }
