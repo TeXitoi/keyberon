@@ -10,7 +10,7 @@ cortex-m = "0.5"
 cortex-m-rt = { version = "0.6.6", features = ["device"] }
 panic-semihosting = "0.5"
 stm32f103xx-usb = { git = "https://github.com/mvirkkunen/stm32f103xx-usb.git" }
-usb-device = { git = "https://github.com/mvirkkunen/usb-device", rev = "e58e30f3b9c9bf4aab00ea039d129b964a3fd2d3" }
+usb-device = "0.2.0"
 cortex-m-rtfm = "0.4.1"
 cortex-m-semihosting = "0.3.2"
 either = {version = "1.5", default-features = false}
