@@ -95,7 +95,7 @@ const APP: () = {
         let usb_dm = gpioa.pa11;
         let usb_dp = usb_dp.into_floating_input(&mut gpioa.crh);
 
-        *USB_BUS = Some(UsbBus::new(device.USB,(usb_dm, usb_dp)));
+        *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
         let usb_class = hid::HidClass::new(Keyboard::new(led), &usb_bus);
