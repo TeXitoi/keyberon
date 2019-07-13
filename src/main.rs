@@ -99,7 +99,7 @@ const APP: () = {
         let usb_bus = USB_BUS.as_ref().unwrap();
 
         let usb_class = hid::HidClass::new(Keyboard::new(led), &usb_bus);
-        let mut usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(VID, PID))
+        let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(VID, PID))
             .manufacturer("RIIR Task Force")
             .product("Keyberon")
             .serial_number(env!("CARGO_PKG_VERSION"))
