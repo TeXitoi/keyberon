@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![allow(deprecated)]
 
 extern crate panic_semihosting;
 
