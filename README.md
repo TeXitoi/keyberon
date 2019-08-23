@@ -1,6 +1,6 @@
 # Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon)
 
-A hand wired ortholinear mechanical keyboard with a firmware in pure rust. The case use a parametric design allowing to create a grid keyboard of any size. The firmware allow you to customize each key as you wish: a layer change (as the function key), a key combo (as one key for the paste shortcut) or a regular key.
+A hand wired ortholinear mechanical keyboard with a firmware in pure Rust. The case uses a parametric design allowing to create a grid keyboard of any size. The firmware allows you to customize each key as you wish: A layer change (as the function key), a key combo (as one key for the paste shortcut) or a regular key.
 
 ![photo](images/keyberon.jpg)
 
