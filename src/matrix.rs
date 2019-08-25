@@ -57,7 +57,7 @@ pub struct Cols(
 );
 impl_getter! {
     Cols,
-    _embedded_hal_digital_InputPin,
+    dyn _embedded_hal_digital_InputPin,
     12,
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 }
@@ -71,7 +71,7 @@ pub struct Rows(
 );
 impl_getter! {
     Rows,
-    _embedded_hal_digital_OutputPin,
+    dyn _embedded_hal_digital_OutputPin,
     5,
     [0, 1, 2, 3, 4]
 }
