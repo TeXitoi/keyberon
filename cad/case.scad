@@ -7,15 +7,20 @@ nb_row=5;
 nb_col=12;
 rounding=3;
 border=8;
-switch_hole=14;
+switch_hole=14.2;// by spec should be 14, can be adjusted for printer imprecision
 inter_switch=19.05;
 back_thickness=1.4;
+
+// insert hole, can be adjusted depending on the size of your insert
+// or if you use autotaping screws
+insert_diameter=3.2;
+insert_height=4.6;
 
 case_depth=8+back_thickness;
 case_width=inter_switch*nb_col-(inter_switch-switch_hole)+border*2;
 case_height=inter_switch*nb_row-(inter_switch-switch_hole)+border*2;
 bp_width=23;
-bp_height=53.5;
+bp_height=53;
 bp_x=case_width/2+5.5;
 bp_y=case_height/2-bp_height/2-1.25;
 mcu_width=bp_x-case_width/2+bp_width/2+border;
@@ -93,7 +98,7 @@ module case() {
 
         // screw holes
         hole_placement() {
-          cylinder(d=1.8, h=(case_depth-back_thickness-1)*2, center=true);
+          cylinder(d=insert_diameter, h=insert_height*2, center=true);
         }
     }
 }
