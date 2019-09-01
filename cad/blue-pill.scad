@@ -89,24 +89,24 @@ module blue_pill_pocket(under=2, over=3, open_under=false, open_over=false, led_
   difference() {
     union() {
       // PCB
-      cube([54, 23, 2], center=true);
+      cube([53.5, 23, 2], center=true);
 
       // debugger
       translate([33, 0, (depth+pin_size)/2]) cube([25, 11, 3], center=true);
 
       // usb
-      translate([-54/2-1-30/2, 0, (depth+pin_size)/2]) {
+      translate([-53.5/2-1.25-30/2, 0, (depth+pin_size)/2]) {
         cube([30, 11, 9], center=true);
         cube([35, 7.5, 2.5], center=true);
       }
 
       // under
       translate([0, 0, -(under+1)/2])
-        cube([54, 23-(open_under ? 0 : 4), under+1], center=true);
+        cube([53.5, 23-(open_under ? 0 : 4), under+1], center=true);
 
       // over
       translate([0, 0, (over+1)/2])
-        cube([54, 23-(open_over ? 0 : 4), over+1], center=true);
+        cube([53.5, 23-(open_over ? 0 : 4), over+1], center=true);
 
       // HSE
       translate([3.5*pin_size,0,depth/2]) linear_extrude(3.6)
