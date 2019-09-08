@@ -60,9 +60,8 @@ const PID: u16 = 0x16c0;
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
     static mut USB_CLASS: KeyboardHidClass = ();
-    static mut MATRIX: Matrix = ();
-    static mut DEBOUNCER: Debouncer<PressedKeys> =
-        Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5);
+    static mut MATRIX: Matrix<matrix::Cols, matrix::Rows> = ();
+    static mut DEBOUNCER: Debouncer<PressedKeys<matrix::U5, matrix::U12>> = ();
     static mut LAYOUT: layout::Layout = layout::Layout::new(layout::LAYERS);
     static mut TIMER: timer::Timer<stm32::TIM3> = ();
 
@@ -109,33 +108,37 @@ const APP: () = {
         let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
 
+        let mut matrix = matrix::Matrix::new(
+            matrix::Cols(
+                gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
+                gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
+                gpiob.pb14.into_pull_up_input(&mut gpiob.crh),
+                gpiob.pb15.into_pull_up_input(&mut gpiob.crh),
+                gpioa.pa8.into_pull_up_input(&mut gpioa.crh),
+                gpioa.pa9.into_pull_up_input(&mut gpioa.crh),
+                gpioa.pa10.into_pull_up_input(&mut gpioa.crh),
+                gpiob.pb5.into_pull_up_input(&mut gpiob.crl),
+                gpiob.pb6.into_pull_up_input(&mut gpiob.crl),
+                gpiob.pb7.into_pull_up_input(&mut gpiob.crl),
+                gpiob.pb8.into_pull_up_input(&mut gpiob.crh),
+                gpiob.pb9.into_pull_up_input(&mut gpiob.crh),
+            ),
+            matrix::Rows(
+                gpiob.pb11.into_push_pull_output(&mut gpiob.crh),
+                gpiob.pb10.into_push_pull_output(&mut gpiob.crh),
+                gpiob.pb1.into_push_pull_output(&mut gpiob.crl),
+                gpiob.pb0.into_push_pull_output(&mut gpiob.crl),
+                gpioa.pa7.into_push_pull_output(&mut gpioa.crl),
+            ),
+        );
+        matrix.clear();
+
         init::LateResources {
             USB_DEV: usb_dev,
             USB_CLASS: usb_class,
             TIMER: timer,
-            MATRIX: matrix::Matrix::new(
-                matrix::Cols(
-                    gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb14.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb15.into_pull_up_input(&mut gpiob.crh),
-                    gpioa.pa8.into_pull_up_input(&mut gpioa.crh),
-                    gpioa.pa9.into_pull_up_input(&mut gpioa.crh),
-                    gpioa.pa10.into_pull_up_input(&mut gpioa.crh),
-                    gpiob.pb5.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb6.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb7.into_pull_up_input(&mut gpiob.crl),
-                    gpiob.pb8.into_pull_up_input(&mut gpiob.crh),
-                    gpiob.pb9.into_pull_up_input(&mut gpiob.crh),
-                ),
-                matrix::Rows(
-                    gpiob.pb11.into_push_pull_output(&mut gpiob.crh),
-                    gpiob.pb10.into_push_pull_output(&mut gpiob.crh),
-                    gpiob.pb1.into_push_pull_output(&mut gpiob.crl),
-                    gpiob.pb0.into_push_pull_output(&mut gpiob.crl),
-                    gpioa.pa7.into_push_pull_output(&mut gpioa.crl),
-                ),
-            ),
+            DEBOUNCER: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
+            MATRIX: matrix,
         }
     }
 
