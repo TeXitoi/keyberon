@@ -4,6 +4,8 @@ A hand wired ortholinear mechanical keyboard with a firmware in pure Rust. The c
 
 ![photo](images/keyberon.jpg)
 
+![photo](images/keyberon5x15.jpg)
+
 You can [build](BUILDING.md) this keyboard yourself quite easily.
 
 ## The case
