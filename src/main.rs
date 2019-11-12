@@ -15,6 +15,7 @@ pub mod matrix;
 use crate::debounce::Debouncer;
 use crate::keyboard::Keyboard;
 use crate::matrix::{Matrix, PressedKeys};
+use embedded_hal::digital::v2::OutputPin;
 use rtfm::app;
 use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::prelude::*;
@@ -23,7 +24,6 @@ use stm32f1xx_hal::{gpio, timer};
 use usb_device::bus;
 use usb_device::class::UsbClass;
 use usb_device::prelude::*;
-use embedded_hal::digital::v2::OutputPin;
 
 type KeyboardHidClass = hid::HidClass<'static, UsbBusType, Keyboard>;
 type Led = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
