@@ -2,7 +2,8 @@ use core::borrow::{Borrow, BorrowMut};
 pub use generic_array::typenum::{U12, U5};
 use generic_array::{arr, ArrayLength, GenericArray};
 use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
-use stm32f1xx_hal::prelude::*;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+use void::Void;
 
 pub trait DynGetter<'a> {
     type DynRef: 'a;
@@ -79,7 +80,7 @@ pub struct Cols(
 );
 impl_getter! {
     Cols,
-    dyn _embedded_hal_digital_InputPin,
+    dyn InputPin<Error = Void>,
     U12,
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 }
@@ -93,7 +94,7 @@ pub struct Rows(
 );
 impl_getter! {
     Rows,
-    dyn _embedded_hal_digital_OutputPin,
+    dyn OutputPin<Error = Void>,
     U5,
     [0, 1, 2, 3, 4]
 }
@@ -111,10 +112,10 @@ impl<'a, C, R> Matrix<C, R>
 where
     R: DynGetter<'a>,
     R::Len: ArrayLength<()>,
-    R::DynMutRef: BorrowMut<dyn _embedded_hal_digital_OutputPin + 'a>,
+    R::DynMutRef: BorrowMut<dyn OutputPin<Error = Void> + 'a>,
 {
     pub fn clear(&'a mut self) {
-        self.rows.map_mut(|mut c| c.borrow_mut().set_high());
+        self.rows.map_mut(|mut c| c.borrow_mut().set_high().unwrap());
     }
 }
 impl<'a, C, R> Matrix<C, R>
@@ -123,16 +124,16 @@ where
     R: DynGetter<'a>,
     C::Len: ArrayLength<bool>,
     R::Len: ArrayLength<GenericArray<bool, C::Len>>,
-    R::DynMutRef: BorrowMut<dyn _embedded_hal_digital_OutputPin + 'a>,
-    C::DynRef: Borrow<dyn _embedded_hal_digital_InputPin + 'a>,
+    R::DynMutRef: BorrowMut<dyn OutputPin<Error = Void> + 'a>,
+    C::DynRef: Borrow<dyn InputPin<Error = Void> + 'a>,
 {
     pub fn get(&'a mut self) -> PressedKeys<R::Len, C::Len> {
         let cols = &self.cols;
         PressedKeys(self.rows.map_mut(|mut c| {
-            c.borrow_mut().set_low();
+            c.borrow_mut().set_low().unwrap();
             cortex_m::asm::delay(5 * 48); // 5µs
-            let col = cols.map(|r| r.borrow().is_low());
-            c.borrow_mut().set_high();
+            let col = cols.map(|r| r.borrow().is_low().unwrap());
+            c.borrow_mut().set_high().unwrap();
             col
         }))
     }
