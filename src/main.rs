@@ -1,6 +1,5 @@
 #![no_main]
 #![no_std]
-#![allow(deprecated)]
 
 extern crate panic_semihosting;
 
@@ -15,18 +14,56 @@ pub mod matrix;
 use crate::debounce::Debouncer;
 use crate::keyboard::Keyboard;
 use crate::matrix::{Matrix, PressedKeys};
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+use generic_array::typenum::{U12, U5};
 use rtfm::app;
 use stm32_usbd::{UsbBus, UsbBusType};
+use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, timer};
 use usb_device::bus;
 use usb_device::class::UsbClass;
 use usb_device::prelude::*;
+use void::Void;
 
 type KeyboardHidClass = hid::HidClass<'static, UsbBusType, Keyboard>;
 type Led = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
+
+pub struct Cols(
+    pub PB12<Input<PullUp>>,
+    pub PB13<Input<PullUp>>,
+    pub PB14<Input<PullUp>>,
+    pub PB15<Input<PullUp>>,
+    pub PA8<Input<PullUp>>,
+    pub PA9<Input<PullUp>>,
+    pub PA10<Input<PullUp>>,
+    pub PB5<Input<PullUp>>,
+    pub PB6<Input<PullUp>>,
+    pub PB7<Input<PullUp>>,
+    pub PB8<Input<PullUp>>,
+    pub PB9<Input<PullUp>>,
+);
+impl_getter! {
+    Cols,
+    dyn InputPin<Error = Void>,
+    U12,
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+}
+
+pub struct Rows(
+    pub PB11<Output<PushPull>>,
+    pub PB10<Output<PushPull>>,
+    pub PB1<Output<PushPull>>,
+    pub PB0<Output<PushPull>>,
+    pub PA7<Output<PushPull>>,
+);
+impl_getter! {
+    Rows,
+    dyn OutputPin<Error = Void>,
+    U5,
+    [0, 1, 2, 3, 4]
+}
 
 // Generic keyboard from
 // https://github.com/obdev/v-usb/blob/master/usbdrv/USB-IDs-for-free.txt
@@ -37,8 +74,8 @@ const PID: u16 = 0x16c0;
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
     static mut USB_CLASS: KeyboardHidClass = ();
-    static mut MATRIX: Matrix<matrix::Cols, matrix::Rows> = ();
-    static mut DEBOUNCER: Debouncer<PressedKeys<matrix::U5, matrix::U12>> = ();
+    static mut MATRIX: Matrix<Cols, Rows> = ();
+    static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
     static mut LAYOUT: layout::Layout = layout::Layout::new(layout::LAYERS);
     static mut TIMER: timer::Timer<stm32::TIM3> = ();
 
@@ -80,7 +117,7 @@ const APP: () = {
         timer.listen(timer::Event::Update);
 
         let mut matrix = matrix::Matrix::new(
-            matrix::Cols(
+            Cols(
                 gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
                 gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
                 gpiob.pb14.into_pull_up_input(&mut gpiob.crh),
@@ -94,7 +131,7 @@ const APP: () = {
                 gpiob.pb8.into_pull_up_input(&mut gpiob.crh),
                 gpiob.pb9.into_pull_up_input(&mut gpiob.crh),
             ),
-            matrix::Rows(
+            Rows(
                 gpiob.pb11.into_push_pull_output(&mut gpiob.crh),
                 gpiob.pb10.into_push_pull_output(&mut gpiob.crh),
                 gpiob.pb1.into_push_pull_output(&mut gpiob.crl),

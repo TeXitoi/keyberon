@@ -1,8 +1,6 @@
 use core::borrow::{Borrow, BorrowMut};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
-pub use generic_array::typenum::{U12, U5};
-use generic_array::{arr, ArrayLength, GenericArray};
-use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
+use generic_array::{ArrayLength, GenericArray};
 use void::Void;
 
 pub trait DynGetter<'a> {
@@ -20,9 +18,10 @@ pub trait DynGetter<'a> {
         Self::Len: ArrayLength<T>;
 }
 
+#[macro_export]
 macro_rules! impl_getter {
     ($s:ident, $t:ty, $len:tt, [$($idx:tt),+]) => {
-        impl<'a> DynGetter<'a> for $s {
+        impl<'a> crate::matrix::DynGetter<'a> for $s {
             type DynRef = &'a $t;
             type DynMutRef = &'a mut $t;
             type Len = $len;
@@ -46,15 +45,15 @@ macro_rules! impl_getter {
                 use generic_array::typenum::marker_traits::Unsigned;
                 $len::to_usize()
             }
-            fn map<T>(&'a self, mut f: impl FnMut(Self::DynRef) -> T) -> GenericArray<T, $len> {
-                arr![T;
+            fn map<T>(&'a self, mut f: impl FnMut(Self::DynRef) -> T) -> generic_array::GenericArray<T, $len> {
+                generic_array::arr![T;
                     $(
                         f(&self.$idx),
                     )+
                 ]
             }
-            fn map_mut<T>(&'a mut self, mut f: impl FnMut(Self::DynMutRef) -> T) -> GenericArray<T, $len> {
-                arr![T;
+            fn map_mut<T>(&'a mut self, mut f: impl FnMut(Self::DynMutRef) -> T) -> generic_array::GenericArray<T, $len> {
+                generic_array::arr![T;
                     $(
                         f(&mut self.$idx),
                     )+
@@ -64,50 +63,17 @@ macro_rules! impl_getter {
     }
 }
 
-pub struct Cols(
-    pub PB12<Input<PullUp>>,
-    pub PB13<Input<PullUp>>,
-    pub PB14<Input<PullUp>>,
-    pub PB15<Input<PullUp>>,
-    pub PA8<Input<PullUp>>,
-    pub PA9<Input<PullUp>>,
-    pub PA10<Input<PullUp>>,
-    pub PB5<Input<PullUp>>,
-    pub PB6<Input<PullUp>>,
-    pub PB7<Input<PullUp>>,
-    pub PB8<Input<PullUp>>,
-    pub PB9<Input<PullUp>>,
-);
-impl_getter! {
-    Cols,
-    dyn InputPin<Error = Void>,
-    U12,
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-}
-
-pub struct Rows(
-    pub PB11<Output<PushPull>>,
-    pub PB10<Output<PushPull>>,
-    pub PB1<Output<PushPull>>,
-    pub PB0<Output<PushPull>>,
-    pub PA7<Output<PushPull>>,
-);
-impl_getter! {
-    Rows,
-    dyn OutputPin<Error = Void>,
-    U5,
-    [0, 1, 2, 3, 4]
-}
-
 pub struct Matrix<C, R> {
     cols: C,
     rows: R,
 }
+
 impl<C, R> Matrix<C, R> {
     pub fn new(cols: C, rows: R) -> Self {
         Self { cols, rows }
     }
 }
+
 impl<'a, C, R> Matrix<C, R>
 where
     R: DynGetter<'a>,
@@ -119,6 +85,7 @@ where
             .map_mut(|mut c| c.borrow_mut().set_high().unwrap());
     }
 }
+
 impl<'a, C, R> Matrix<C, R>
 where
     C: DynGetter<'a>,
@@ -145,6 +112,7 @@ pub struct PressedKeys<U, V>(pub GenericArray<GenericArray<bool, V>, U>)
 where
     V: ArrayLength<bool>,
     U: ArrayLength<GenericArray<bool, V>>;
+
 impl<U, V> PressedKeys<U, V>
 where
     V: ArrayLength<bool>,
