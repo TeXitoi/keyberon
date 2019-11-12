@@ -1,4 +1,5 @@
 use crate::hid::{HidDevice, Protocol, ReportType, Subclass};
+use crate::key_code::KbHidReport;
 use crate::Led;
 use embedded_hal::digital::v2::OutputPin;
 
@@ -11,15 +12,18 @@ const REPORT_DESCRIPTOR: &[u8] = &[
 ];
 
 pub struct Keyboard {
-    report: [u8; 8],
+    report: KbHidReport,
     led: Led,
 }
 impl Keyboard {
     pub fn new(led: Led) -> Keyboard {
         Keyboard {
-            report: [0; 8],
+            report: KbHidReport::default(),
             led,
         }
+    }
+    pub fn set_keyboard_report(&mut self, report: KbHidReport) {
+        self.report = report;
     }
 }
 
@@ -38,7 +42,7 @@ impl HidDevice for Keyboard {
 
     fn get_report(&mut self, report_type: ReportType, _report_id: u8) -> Result<&[u8], ()> {
         match report_type {
-            ReportType::Input => Ok(&self.report),
+            ReportType::Input => Ok(self.report.as_bytes()),
             _ => Err(()),
         }
     }

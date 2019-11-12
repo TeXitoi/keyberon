@@ -127,7 +127,7 @@ impl KeyCode {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct KbHidReport([u8; 8]);
 
 impl KbHidReport {

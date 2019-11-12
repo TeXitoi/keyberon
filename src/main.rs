@@ -170,6 +170,9 @@ const APP: () = {
             for kc in resources.LAYOUT.key_codes(data.iter_pressed()) {
                 report.pressed(kc);
             }
+            resources
+                .USB_CLASS
+                .lock(|k| k.device_mut().set_keyboard_report(report.clone()));
             while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
         }
     }

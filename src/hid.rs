@@ -109,6 +109,10 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         }
     }
 
+    pub fn device_mut(&mut self) -> &mut D {
+        &mut self.device
+    }
+
     pub fn write(&mut self, data: &[u8]) -> Result<usize, ()> {
         if self.expect_interrupt_in_complete {
             return Ok(0);
