@@ -63,14 +63,8 @@ const APP: () = {
         let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
         led.set_high().unwrap();
 
-        // BluePill board has a pull-up resistor on the D+ line.
-        // Pull the D+ pin down to send a RESET condition to the USB bus.
-        let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
-        usb_dp.set_low().unwrap();
-        cortex_m::asm::delay(clocks.sysclk().0 / 100);
-
         let usb_dm = gpioa.pa11;
-        let usb_dp = usb_dp.into_floating_input(&mut gpioa.crh);
+        let usb_dp = gpioa.pa12.into_floating_input(&mut gpioa.crh);
 
         *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
