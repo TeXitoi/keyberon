@@ -1,8 +1,6 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;
-
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
@@ -12,18 +10,19 @@ use keyberon::impl_getter;
 use keyberon::key_code::KeyCode::*;
 use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
+use panic_semihosting as _;
 use rtfm::app;
 use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, timer};
-use usb_device::bus;
+use usb_device::bus::UsbBusAllocator;
 use usb_device::class::UsbClass as _;
-use usb_device::prelude::*;
 use void::Void;
 
 type UsbClass = keyberon::Class<'static, UsbBusType, Leds>;
+type UsbDevice = keyberon::Device<'static, UsbBusType>;
 
 pub struct Leds {
     caps_lock: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
@@ -94,14 +93,9 @@ pub static LAYERS: keyberon::layout::Layers = &[
     ]
 ];
 
-// Generic keyboard from
-// https://github.com/obdev/v-usb/blob/master/usbdrv/USB-IDs-for-free.txt
-const VID: u16 = 0x27db;
-const PID: u16 = 0x16c0;
-
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
-    static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
+    static mut USB_DEV: UsbDevice = ();
     static mut USB_CLASS: UsbClass = ();
     static mut MATRIX: Matrix<Cols, Rows> = ();
     static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
@@ -110,7 +104,7 @@ const APP: () = {
 
     #[init]
     fn init() -> init::LateResources {
-        static mut USB_BUS: Option<bus::UsbBusAllocator<UsbBusType>> = None;
+        static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 
         let mut flash = device.FLASH.constrain();
         let mut rcc = device.RCC.constrain();
@@ -136,12 +130,8 @@ const APP: () = {
         *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
-        let usb_class = keyberon::new_class(&usb_bus, leds);
-        let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(VID, PID))
-            .manufacturer("RIIR Task Force")
-            .product("Keyberon")
-            .serial_number(env!("CARGO_PKG_VERSION"))
-            .build();
+        let usb_class = keyberon::new_class(usb_bus, leds);
+        let usb_dev = keyberon::new_device(usb_bus);
 
         let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
@@ -208,7 +198,7 @@ const APP: () = {
     }
 };
 
-fn usb_poll(usb_dev: &mut UsbDevice<'static, UsbBusType>, keyboard: &mut UsbClass) {
+fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbClass) {
     if usb_dev.poll(&mut [keyboard]) {
         keyboard.poll();
     }
