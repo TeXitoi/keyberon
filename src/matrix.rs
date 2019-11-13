@@ -21,7 +21,7 @@ pub trait DynGetter<'a> {
 #[macro_export]
 macro_rules! impl_getter {
     ($s:ident, $t:ty, $len:tt, [$($idx:tt),+]) => {
-        impl<'a> crate::matrix::DynGetter<'a> for $s {
+        impl<'a> $crate::matrix::DynGetter<'a> for $s {
             type DynRef = &'a $t;
             type DynMutRef = &'a mut $t;
             type Len = $len;
@@ -99,7 +99,6 @@ where
         let cols = &self.cols;
         PressedKeys(self.rows.map_mut(|mut c| {
             c.borrow_mut().set_low().unwrap();
-            cortex_m::asm::delay(5 * 48); // 5µs
             let col = cols.map(|r| r.borrow().is_low().unwrap());
             c.borrow_mut().set_high().unwrap();
             col

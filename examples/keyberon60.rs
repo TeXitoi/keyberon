@@ -3,20 +3,14 @@
 
 extern crate panic_semihosting;
 
-pub mod action;
-pub mod debounce;
-pub mod hid;
-pub mod key_code;
-pub mod keyboard;
-pub mod layout;
-pub mod matrix;
-
-use crate::action::Action::{self, *};
-use crate::action::{d, k, l, m};
-use crate::debounce::Debouncer;
-use crate::key_code::KeyCode::*;
-use crate::keyboard::Keyboard;
-use crate::matrix::{Matrix, PressedKeys};
+use keyberon::action::Action::{self, *};
+use keyberon::action::{d, k, l, m};
+use keyberon::debounce::Debouncer;
+use keyberon::key_code::KeyCode::*;
+use keyberon::keyboard::Keyboard;
+use keyberon::matrix::{Matrix, PressedKeys};
+use keyberon::impl_getter;
+use keyberon::layout::Layout;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U12, U5};
 use rtfm::app;
@@ -30,12 +24,12 @@ use usb_device::class::UsbClass;
 use usb_device::prelude::*;
 use void::Void;
 
-type KeyboardHidClass = hid::HidClass<'static, UsbBusType, Keyboard<Leds>>;
+type KeyboardHidClass = keyberon::hid::HidClass<'static, UsbBusType, Keyboard<Leds>>;
 
 pub struct Leds {
     caps_lock: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
 }
-impl keyboard::Leds for Leds {
+impl keyberon::keyboard::Leds for Leds {
     fn caps_lock(&mut self, status: bool) {
         if status {
             self.caps_lock.set_low().unwrap()
@@ -85,7 +79,7 @@ const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
 
 #[rustfmt::skip]
-pub static LAYERS: layout::Layers = &[
+pub static LAYERS: keyberon::layout::Layers = &[
     &[
         &[k(Grave),   k(Kb1),k(Kb2),k(Kb3), k(Kb4),  k(Kb5),   k(Kb6),   k(Kb7),  k(Kb8), k(Kb9),  k(Kb0),   k(Minus)   ],
         &[k(Tab),     k(Q),  k(W),  k(E),   k(R),    k(T),     k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
@@ -112,7 +106,7 @@ const APP: () = {
     static mut USB_CLASS: KeyboardHidClass = ();
     static mut MATRIX: Matrix<Cols, Rows> = ();
     static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
-    static mut LAYOUT: layout::Layout = layout::Layout::new(LAYERS);
+    static mut LAYOUT: Layout = Layout::new(LAYERS);
     static mut TIMER: timer::Timer<stm32::TIM3> = ();
 
     #[init]
@@ -143,7 +137,7 @@ const APP: () = {
         *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
-        let usb_class = hid::HidClass::new(Keyboard::new(leds), &usb_bus);
+        let usb_class = keyberon::hid::HidClass::new(Keyboard::new(leds), &usb_bus);
         let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(VID, PID))
             .manufacturer("RIIR Task Force")
             .product("Keyberon")
@@ -153,7 +147,7 @@ const APP: () = {
         let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
 
-        let mut matrix = matrix::Matrix::new(
+        let mut matrix = Matrix::new(
             Cols(
                 gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
                 gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
@@ -203,7 +197,7 @@ const APP: () = {
 
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
-            let mut report = key_code::KbHidReport::default();
+            let mut report = keyberon::key_code::KbHidReport::default();
             for kc in resources.LAYOUT.key_codes(data.iter_pressed()) {
                 report.pressed(kc);
             }
