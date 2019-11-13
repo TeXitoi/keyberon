@@ -3,16 +3,15 @@
 
 extern crate panic_semihosting;
 
+use embedded_hal::digital::v2::{InputPin, OutputPin};
+use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
 use keyberon::action::{d, k, l, m};
 use keyberon::debounce::Debouncer;
-use keyberon::key_code::KeyCode::*;
-use keyberon::keyboard::Keyboard;
-use keyberon::matrix::{Matrix, PressedKeys};
 use keyberon::impl_getter;
+use keyberon::key_code::KeyCode::*;
 use keyberon::layout::Layout;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
-use generic_array::typenum::{U12, U5};
+use keyberon::matrix::{Matrix, PressedKeys};
 use rtfm::app;
 use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
@@ -20,11 +19,11 @@ use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32;
 use stm32f1xx_hal::{gpio, timer};
 use usb_device::bus;
-use usb_device::class::UsbClass;
+use usb_device::class::UsbClass as _;
 use usb_device::prelude::*;
 use void::Void;
 
-type KeyboardHidClass = keyberon::hid::HidClass<'static, UsbBusType, Keyboard<Leds>>;
+type UsbClass = keyberon::Class<'static, UsbBusType, Leds>;
 
 pub struct Leds {
     caps_lock: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
@@ -103,7 +102,7 @@ const PID: u16 = 0x16c0;
 #[app(device = stm32f1xx_hal::stm32)]
 const APP: () = {
     static mut USB_DEV: UsbDevice<'static, UsbBusType> = ();
-    static mut USB_CLASS: KeyboardHidClass = ();
+    static mut USB_CLASS: UsbClass = ();
     static mut MATRIX: Matrix<Cols, Rows> = ();
     static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
     static mut LAYOUT: Layout = Layout::new(LAYERS);
@@ -137,7 +136,7 @@ const APP: () = {
         *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
-        let usb_class = keyberon::hid::HidClass::new(Keyboard::new(leds), &usb_bus);
+        let usb_class = keyberon::new_class(&usb_bus, leds);
         let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(VID, PID))
             .manufacturer("RIIR Task Force")
             .product("Keyberon")
@@ -209,7 +208,7 @@ const APP: () = {
     }
 };
 
-fn usb_poll(usb_dev: &mut UsbDevice<'static, UsbBusType>, keyboard: &mut KeyboardHidClass) {
+fn usb_poll(usb_dev: &mut UsbDevice<'static, UsbBusType>, keyboard: &mut UsbClass) {
     if usb_dev.poll(&mut [keyboard]) {
         keyboard.poll();
     }
