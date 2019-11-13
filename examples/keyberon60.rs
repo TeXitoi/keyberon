@@ -186,10 +186,7 @@ const APP: () = {
 
         if resources.DEBOUNCER.update(resources.MATRIX.get()) {
             let data = resources.DEBOUNCER.get();
-            let mut report = keyberon::key_code::KbHidReport::default();
-            for kc in resources.LAYOUT.key_codes(data.iter_pressed()) {
-                report.pressed(kc);
-            }
+            let report = resources.LAYOUT.report_from_pressed(data.iter_pressed());
             resources
                 .USB_CLASS
                 .lock(|k| k.device_mut().set_keyboard_report(report.clone()));

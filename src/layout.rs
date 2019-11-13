@@ -1,5 +1,5 @@
 use crate::action::Action;
-use crate::key_code::KeyCode;
+use crate::key_code::{KbHidReport, KeyCode};
 
 pub type Layers = &'static [&'static [&'static [Action]]];
 
@@ -14,6 +14,13 @@ impl Layout {
             layers,
             default_layer: 0,
         }
+    }
+    pub fn report_from_pressed<'a>(&'a mut self, kp: impl Iterator<Item = (usize, usize)> + Clone + 'a) -> KbHidReport {
+        let mut report = KbHidReport::default();
+        for kc in self.key_codes(kp) {
+            report.pressed(kc);
+        }
+        report
     }
     pub fn key_codes<'a>(
         &'a mut self,
