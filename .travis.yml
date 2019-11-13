@@ -7,7 +7,7 @@ rust:
 env: RUN=BUILD
 before_script: rustup target add thumbv7m-none-eabi
 script:
- - cargo build --release
+ - cargo build --release --examples
 matrix:
   include:
     - rust: stable
