@@ -4,12 +4,12 @@ use crate::key_code::KeyCode;
 pub type Layers = &'static [&'static [&'static [Action]]];
 
 pub struct Layout {
-    layers: [[[Action; 12]; 5]; 2],
+    layers: Layers,
     default_layer: usize,
 }
 
 impl Layout {
-    pub const fn new(layers: [[[Action; 12]; 5]; 2]) -> Self {
+    pub const fn new(layers: Layers) -> Self {
         Self {
             layers,
             default_layer: 0,
