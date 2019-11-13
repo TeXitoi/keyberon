@@ -15,7 +15,10 @@ impl Layout {
             default_layer: 0,
         }
     }
-    pub fn report_from_pressed<'a>(&'a mut self, kp: impl Iterator<Item = (usize, usize)> + Clone + 'a) -> KbHidReport {
+    pub fn report_from_pressed<'a>(
+        &'a mut self,
+        kp: impl Iterator<Item = (usize, usize)> + Clone + 'a,
+    ) -> KbHidReport {
         let mut report = KbHidReport::default();
         for kc in self.key_codes(kp) {
             report.pressed(kc);
