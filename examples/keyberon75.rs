@@ -6,7 +6,7 @@ use generic_array::typenum::{U15, U5};
 use keyberon::action::Action::{self, *};
 use keyberon::action::{d, k, l, m};
 use keyberon::debounce::Debouncer;
-use keyberon::impl_heterogenous_map;
+use keyberon::impl_heterogenous_array;
 use keyberon::key_code::KeyCode::*;
 use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
@@ -54,7 +54,7 @@ pub struct Cols(
     pub PA5<Input<PullUp>>,
     pub PA4<Input<PullUp>>,
 );
-impl_heterogenous_map! {
+impl_heterogenous_array! {
     Cols,
     dyn InputPin<Error = Void>,
     U15,
@@ -68,7 +68,7 @@ pub struct Rows(
     pub PB0<Output<PushPull>>,
     pub PA7<Output<PushPull>>,
 );
-impl_heterogenous_map! {
+impl_heterogenous_array! {
     Rows,
     dyn OutputPin<Error = Void>,
     U5,
