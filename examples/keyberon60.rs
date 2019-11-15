@@ -6,7 +6,7 @@ use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
 use keyberon::action::{d, k, l, m};
 use keyberon::debounce::Debouncer;
-use keyberon::impl_getter;
+use keyberon::impl_heterogenous_map;
 use keyberon::key_code::KeyCode::*;
 use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
@@ -51,7 +51,7 @@ pub struct Cols(
     pub PB8<Input<PullUp>>,
     pub PB9<Input<PullUp>>,
 );
-impl_getter! {
+impl_heterogenous_map! {
     Cols,
     dyn InputPin<Error = Void>,
     U12,
@@ -65,7 +65,7 @@ pub struct Rows(
     pub PB0<Output<PushPull>>,
     pub PA7<Output<PushPull>>,
 );
-impl_getter! {
+impl_heterogenous_map! {
     Rows,
     dyn OutputPin<Error = Void>,
     U5,
@@ -136,7 +136,7 @@ const APP: () = {
         let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
 
-        let mut matrix = Matrix::new(
+        let matrix = Matrix::new(
             Cols(
                 gpiob.pb12.into_pull_up_input(&mut gpiob.crh),
                 gpiob.pb13.into_pull_up_input(&mut gpiob.crh),
@@ -159,7 +159,6 @@ const APP: () = {
                 gpioa.pa7.into_push_pull_output(&mut gpioa.crl),
             ),
         );
-        matrix.clear();
 
         init::LateResources {
             USB_DEV: usb_dev,

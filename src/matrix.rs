@@ -1,63 +1,52 @@
-use core::borrow::{Borrow, BorrowMut};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::{ArrayLength, GenericArray};
 use void::Void;
 
-pub trait DynGetter<'a> {
-    type DynRef: 'a;
-    type DynMutRef: 'a;
+pub trait HeterogenousMap {
+    type Item;
     type Len;
-    fn get(&'a self, i: usize) -> Option<Self::DynRef>;
-    fn get_mut(&'a mut self, i: usize) -> Option<Self::DynMutRef>;
-    fn len(&self) -> usize;
-    fn map<T>(&'a self, f: impl FnMut(Self::DynRef) -> T) -> GenericArray<T, Self::Len>
-    where
-        Self::Len: ArrayLength<T>;
-    fn map_mut<T>(&'a mut self, f: impl FnMut(Self::DynMutRef) -> T) -> GenericArray<T, Self::Len>
+    fn map<T>(self, f: impl FnMut(Self::Item) -> T) -> GenericArray<T, Self::Len>
     where
         Self::Len: ArrayLength<T>;
 }
 
 #[macro_export]
-macro_rules! impl_getter {
+macro_rules! impl_heterogenous_map {
     ($s:ident, $t:ty, $len:tt, [$($idx:tt),+]) => {
-        impl<'a> $crate::matrix::DynGetter<'a> for $s {
-            type DynRef = &'a $t;
-            type DynMutRef = &'a mut $t;
+        impl<'a> IntoIterator for &'a $s {
+            type Item = &'a $t;
+            type IntoIter = generic_array::GenericArrayIter<&'a $t, $len>;
+            fn into_iter(self) -> Self::IntoIter {
+                generic_array::arr![
+                    Self::Item;
+                    $( &self.$idx as &$t, )+
+                ].into_iter()
+            }
+        }
+        impl<'a> IntoIterator for &'a mut $s {
+            type Item = &'a mut $t;
+            type IntoIter = generic_array::GenericArrayIter<&'a mut $t, $len>;
+            fn into_iter(self) -> Self::IntoIter {
+                generic_array::arr![
+                    Self::Item;
+                    $( &mut self.$idx as &mut $t, )+
+                ].into_iter()
+            }
+        }
+        impl<'a> $crate::matrix::HeterogenousMap for &'a mut $s {
+            type Item = &'a mut $t;
             type Len = $len;
-            fn get(&'a self, i: usize) -> Option<Self::DynRef> {
-                match i {
-                    $(
-                        $idx => Some(&self.$idx as &$t),
-                    )+
-                        _ => None,
-                }
+            fn map<T>(self, mut f: impl FnMut(Self::Item) -> T) -> generic_array::GenericArray<T, Self::Len>
+            {
+                generic_array::arr![T; $( f(&mut self.$idx), )+]
             }
-            fn get_mut(&'a mut self, i: usize) -> Option<Self::DynMutRef> {
-                match i {
-                    $(
-                        $idx => Some(&mut self.$idx as &mut $t),
-                    )+
-                        _ => None,
-                }
-            }
-            fn len(&self) -> usize {
-                use generic_array::typenum::marker_traits::Unsigned;
-                $len::to_usize()
-            }
-            fn map<T>(&'a self, mut f: impl FnMut(Self::DynRef) -> T) -> generic_array::GenericArray<T, $len> {
-                generic_array::arr![T;
-                    $(
-                        f(&self.$idx),
-                    )+
-                ]
-            }
-            fn map_mut<T>(&'a mut self, mut f: impl FnMut(Self::DynMutRef) -> T) -> generic_array::GenericArray<T, $len> {
-                generic_array::arr![T;
-                    $(
-                        f(&mut self.$idx),
-                    )+
-                ]
+        }
+        impl<'a> $crate::matrix::HeterogenousMap for &'a $s {
+            type Item = &'a $t;
+            type Len = $len;
+            fn map<T>(self, mut f: impl FnMut(Self::Item) -> T) -> generic_array::GenericArray<T, Self::Len>
+            {
+                generic_array::arr![T; $( f(&self.$idx), )+]
             }
         }
     }
@@ -68,39 +57,44 @@ pub struct Matrix<C, R> {
     rows: R,
 }
 
-impl<C, R> Matrix<C, R> {
+impl<C, R> Matrix<C, R>
+where
+    for<'a> &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = Void>>,
+{
     pub fn new(cols: C, rows: R) -> Self {
-        Self { cols, rows }
+        let mut res = Self { cols, rows };
+        res.clear();
+        res
     }
 }
 
-impl<'a, C, R> Matrix<C, R>
+impl<C, R> Matrix<C, R>
 where
-    R: DynGetter<'a>,
-    R::Len: ArrayLength<()>,
-    R::DynMutRef: BorrowMut<dyn OutputPin<Error = Void> + 'a>,
+    for<'a> &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = Void>>,
 {
-    pub fn clear(&'a mut self) {
-        self.rows
-            .map_mut(|mut c| c.borrow_mut().set_high().unwrap());
+    pub fn clear(&mut self) {
+        for r in self.rows.into_iter() {
+            r.set_high().unwrap();
+        }
     }
 }
 
-impl<'a, C, R> Matrix<C, R>
+impl<'a, C: 'a, R: 'a> Matrix<C, R>
 where
-    C: DynGetter<'a>,
-    R: DynGetter<'a>,
-    C::Len: ArrayLength<bool>,
-    R::Len: ArrayLength<GenericArray<bool, C::Len>>,
-    R::DynMutRef: BorrowMut<dyn OutputPin<Error = Void> + 'a>,
-    C::DynRef: Borrow<dyn InputPin<Error = Void> + 'a>,
+    &'a mut R: HeterogenousMap<Item = &'a mut dyn OutputPin<Error = Void>>,
+    <&'a mut R as HeterogenousMap>::Len:
+        ArrayLength<GenericArray<bool, <&'a C as HeterogenousMap>::Len>>,
+    &'a C: HeterogenousMap<Item = &'a dyn InputPin<Error = Void>>,
+    <&'a C as HeterogenousMap>::Len: ArrayLength<bool>,
 {
-    pub fn get(&'a mut self) -> PressedKeys<R::Len, C::Len> {
+    pub fn get(
+        &'a mut self,
+    ) -> PressedKeys<<&'a mut R as HeterogenousMap>::Len, <&'a C as HeterogenousMap>::Len> {
         let cols = &self.cols;
-        PressedKeys(self.rows.map_mut(|mut c| {
-            c.borrow_mut().set_low().unwrap();
-            let col = cols.map(|r| r.borrow().is_low().unwrap());
-            c.borrow_mut().set_high().unwrap();
+        PressedKeys(self.rows.map(|r| {
+            r.set_low().unwrap();
+            let col = cols.map(|r| r.is_low().unwrap());
+            r.set_high().unwrap();
             col
         }))
     }
