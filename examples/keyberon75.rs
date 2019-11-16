@@ -85,7 +85,7 @@ pub static LAYERS: keyberon::layout::Layers = &[
         &[k(Tab),     k(Q),  k(W),  k(E),   k(R),    k(T),     k(Kp7), k(Kp8),    k(Kp9),       k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
         &[k(RBracket),k(A),  k(S),  k(D),   k(F),    k(G),     k(Kp4), k(Kp5),    k(Kp6),       k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
         &[k(Equal),   k(Z),  k(X),  k(C),   k(V),    k(B),     k(Kp1), k(Kp2),    k(Kp3),       k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
-        &[k(LCtrl),   l(1), k(LGui),k(LAlt),k(Space),k(LShift),k(Kp0), k(KpDot),  k(KpEnter),   k(RShift),k(Enter),k(RAlt),k(BSpace),k(Escape),k(RCtrl)  ],
+        &[k(LCtrl),   l(1), k(LGui),k(LAlt),k(Space),k(LShift),k(Kp0), k(KpDot),  k(KpPlus),    k(RShift),k(Enter),k(RAlt),k(BSpace),k(Escape),k(RCtrl)  ],
     ], &[
         &[k(F1),      k(F2),    k(F3),     k(F4),k(F5),k(F6),Trans,Trans,Trans,k(F7),k(F8),  k(F9),  k(F10), k(F11),  k(F12)   ],
         &[k(Escape),  Trans,    Trans,     Trans,Trans,Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,  Trans,   k(PgUp)  ],
