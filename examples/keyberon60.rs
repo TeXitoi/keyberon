@@ -92,21 +92,24 @@ pub static LAYERS: keyberon::layout::Layers = &[
     ]
 ];
 
-#[app(device = stm32f1xx_hal::pac)]
+#[app(device = stm32f1xx_hal::pac, peripherals = true)]
 const APP: () = {
-    static mut USB_DEV: UsbDevice = ();
-    static mut USB_CLASS: UsbClass = ();
-    static mut MATRIX: Matrix<Cols, Rows> = ();
-    static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
-    static mut LAYOUT: Layout = Layout::new(LAYERS);
-    static mut TIMER: timer::Timer<pac::TIM3> = ();
+    struct Resources {
+        usb_dev: UsbDevice,
+        usb_class: UsbClass,
+        matrix: Matrix<Cols, Rows>,
+        debouncer: Debouncer<PressedKeys<U5, U12>>,
+        #[init(Layout::new(LAYERS))]
+        layout: Layout,
+        timer: timer::Timer<pac::TIM3>,
+    }
 
     #[init]
-    fn init() -> init::LateResources {
+    fn init(c: init::Context) -> init::LateResources {
         static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 
-        let mut flash = device.FLASH.constrain();
-        let mut rcc = device.RCC.constrain();
+        let mut flash = c.device.FLASH.constrain();
+        let mut rcc = c.device.RCC.constrain();
 
         let clocks = rcc
             .cfgr
@@ -115,9 +118,9 @@ const APP: () = {
             .pclk1(24.mhz())
             .freeze(&mut flash.acr);
 
-        let mut gpioa = device.GPIOA.split(&mut rcc.apb2);
-        let mut gpiob = device.GPIOB.split(&mut rcc.apb2);
-        let mut gpioc = device.GPIOC.split(&mut rcc.apb2);
+        let mut gpioa = c.device.GPIOA.split(&mut rcc.apb2);
+        let mut gpiob = c.device.GPIOB.split(&mut rcc.apb2);
+        let mut gpioc = c.device.GPIOC.split(&mut rcc.apb2);
 
         let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
         led.set_high().void_unwrap();
@@ -126,13 +129,13 @@ const APP: () = {
         let usb_dm = gpioa.pa11;
         let usb_dp = gpioa.pa12.into_floating_input(&mut gpioa.crh);
 
-        *USB_BUS = Some(UsbBus::new(device.USB, (usb_dm, usb_dp)));
+        *USB_BUS = Some(UsbBus::new(c.device.USB, (usb_dm, usb_dp)));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
         let usb_class = keyberon::new_class(usb_bus, leds);
         let usb_dev = keyberon::new_device(usb_bus);
 
-        let mut timer = timer::Timer::tim3(device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
+        let mut timer = timer::Timer::tim3(c.device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
         timer.listen(timer::Event::Update);
 
         let matrix = Matrix::new(
@@ -160,38 +163,38 @@ const APP: () = {
         );
 
         init::LateResources {
-            USB_DEV: usb_dev,
-            USB_CLASS: usb_class,
-            TIMER: timer,
-            DEBOUNCER: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
-            MATRIX: matrix.void_unwrap(),
+            usb_dev,
+            usb_class,
+            timer,
+            debouncer: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
+            matrix: matrix.void_unwrap(),
         }
     }
 
-    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
-    fn USB_HP_CAN_TX() {
-        usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
+    #[task(binds = USB_HP_CAN_TX, priority = 2, resources = [usb_dev, usb_class])]
+    fn usb_tx(mut c: usb_tx::Context) {
+        usb_poll(&mut c.resources.usb_dev, &mut c.resources.usb_class);
     }
 
-    #[interrupt(priority = 2, resources = [USB_DEV, USB_CLASS])]
-    fn USB_LP_CAN_RX0() {
-        usb_poll(&mut resources.USB_DEV, &mut resources.USB_CLASS);
+    #[task(binds = USB_LP_CAN_RX0, priority = 2, resources = [usb_dev, usb_class])]
+    fn usb_rx(mut c: usb_rx::Context) {
+        usb_poll(&mut c.resources.usb_dev, &mut c.resources.usb_class);
     }
 
-    #[interrupt(priority = 1, resources = [USB_CLASS, MATRIX, DEBOUNCER, LAYOUT, TIMER])]
-    fn TIM3() {
-        resources.TIMER.clear_update_interrupt_flag();
+    #[task(binds = TIM3, priority = 1, resources = [usb_class, matrix, debouncer, layout, timer])]
+    fn tick(mut c: tick::Context) {
+        c.resources.timer.clear_update_interrupt_flag();
 
-        if resources
-            .DEBOUNCER
-            .update(resources.MATRIX.get().void_unwrap())
+        if c.resources
+            .debouncer
+            .update(c.resources.matrix.get().void_unwrap())
         {
-            let data = resources.DEBOUNCER.get();
-            let report = resources.LAYOUT.report_from_pressed(data.iter_pressed());
-            resources
-                .USB_CLASS
+            let data = c.resources.debouncer.get();
+            let report = c.resources.layout.report_from_pressed(data.iter_pressed());
+            c.resources
+                .usb_class
                 .lock(|k| k.device_mut().set_keyboard_report(report.clone()));
-            while let Ok(0) = resources.USB_CLASS.lock(|k| k.write(report.as_bytes())) {}
+            while let Ok(0) = c.resources.usb_class.lock(|k| k.write(report.as_bytes())) {}
         }
     }
 };

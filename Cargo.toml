@@ -18,7 +18,7 @@ cortex-m = "0.6"
 cortex-m-rt = { version = "0.6.6", features = ["device"] }
 panic-semihosting = "0.5"
 stm32-usbd = { version = "0.4.0", features = ["stm32f103xx"] }
-cortex-m-rtfm = "0.4.1"
+cortex-m-rtfm = "0.5"
 cortex-m-semihosting = "0.3.2"
 
 [profile.dev]
