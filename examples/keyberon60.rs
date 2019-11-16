@@ -15,11 +15,10 @@ use rtfm::app;
 use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
 use stm32f1xx_hal::prelude::*;
-use stm32f1xx_hal::stm32;
-use stm32f1xx_hal::{gpio, timer};
+use stm32f1xx_hal::{gpio, pac, timer};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::class::UsbClass as _;
-use void::Void;
+use void::{ResultVoidExt, Void};
 
 type UsbClass = keyberon::Class<'static, UsbBusType, Leds>;
 type UsbDevice = keyberon::Device<'static, UsbBusType>;
@@ -30,9 +29,9 @@ pub struct Leds {
 impl keyberon::keyboard::Leds for Leds {
     fn caps_lock(&mut self, status: bool) {
         if status {
-            self.caps_lock.set_low().unwrap()
+            self.caps_lock.set_low().void_unwrap()
         } else {
-            self.caps_lock.set_high().unwrap()
+            self.caps_lock.set_high().void_unwrap()
         }
     }
 }
@@ -93,14 +92,14 @@ pub static LAYERS: keyberon::layout::Layers = &[
     ]
 ];
 
-#[app(device = stm32f1xx_hal::stm32)]
+#[app(device = stm32f1xx_hal::pac)]
 const APP: () = {
     static mut USB_DEV: UsbDevice = ();
     static mut USB_CLASS: UsbClass = ();
     static mut MATRIX: Matrix<Cols, Rows> = ();
     static mut DEBOUNCER: Debouncer<PressedKeys<U5, U12>> = ();
     static mut LAYOUT: Layout = Layout::new(LAYERS);
-    static mut TIMER: timer::Timer<stm32::TIM3> = ();
+    static mut TIMER: timer::Timer<pac::TIM3> = ();
 
     #[init]
     fn init() -> init::LateResources {
@@ -121,7 +120,7 @@ const APP: () = {
         let mut gpioc = device.GPIOC.split(&mut rcc.apb2);
 
         let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
-        led.set_high().unwrap();
+        led.set_high().void_unwrap();
         let leds = Leds { caps_lock: led };
 
         let usb_dm = gpioa.pa11;
@@ -165,7 +164,7 @@ const APP: () = {
             USB_CLASS: usb_class,
             TIMER: timer,
             DEBOUNCER: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
-            MATRIX: matrix,
+            MATRIX: matrix.void_unwrap(),
         }
     }
 
@@ -183,7 +182,10 @@ const APP: () = {
     fn TIM3() {
         resources.TIMER.clear_update_interrupt_flag();
 
-        if resources.DEBOUNCER.update(resources.MATRIX.get()) {
+        if resources
+            .DEBOUNCER
+            .update(resources.MATRIX.get().void_unwrap())
+        {
             let data = resources.DEBOUNCER.get();
             let report = resources.LAYOUT.report_from_pressed(data.iter_pressed());
             resources

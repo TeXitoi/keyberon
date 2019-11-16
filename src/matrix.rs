@@ -1,6 +1,6 @@
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::{ArrayLength, GenericArray};
-use void::Void;
+use heapless::Vec;
 
 pub trait HeterogenousArray {
     type Len;
@@ -42,50 +42,49 @@ pub struct Matrix<C, R> {
     rows: R,
 }
 
-impl<C, R> Matrix<C, R>
-where
-    for<'a> &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = Void>>,
-{
-    pub fn new(cols: C, rows: R) -> Self {
+impl<C, R> Matrix<C, R> {
+    pub fn new<E>(cols: C, rows: R) -> Result<Self, E>
+    where
+        for<'a> &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = E>>,
+    {
         let mut res = Self { cols, rows };
-        res.clear();
-        res
+        res.clear()?;
+        Ok(res)
     }
-}
-
-impl<C, R> Matrix<C, R>
-where
-    for<'a> &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = Void>>,
-{
-    pub fn clear(&mut self) {
+    pub fn clear<'a, E: 'a>(&'a mut self) -> Result<(), E>
+    where
+        &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = E>>,
+    {
         for r in self.rows.into_iter() {
-            r.set_high().unwrap();
+            r.set_high()?;
         }
+        Ok(())
     }
-}
-
-impl<'a, C: 'a, R: 'a> Matrix<C, R>
-where
-    &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = Void>>,
-    R: HeterogenousArray,
-    R::Len: ArrayLength<GenericArray<bool, C::Len>>,
-    &'a C: IntoIterator<Item = &'a dyn InputPin<Error = Void>>,
-    C: HeterogenousArray,
-    C::Len: ArrayLength<bool>,
-{
-    pub fn get(&'a mut self) -> PressedKeys<R::Len, C::Len> {
+    pub fn get<'a, E: 'a>(&'a mut self) -> Result<PressedKeys<R::Len, C::Len>, E>
+    where
+        &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = E>>,
+        R: HeterogenousArray,
+        R::Len: ArrayLength<GenericArray<bool, C::Len>>,
+        &'a C: IntoIterator<Item = &'a dyn InputPin<Error = E>>,
+        C: HeterogenousArray,
+        C::Len: ArrayLength<bool>,
+    {
         let cols = &self.cols;
-        PressedKeys(
-            self.rows
-                .into_iter()
-                .map(|r| {
-                    r.set_low().unwrap();
-                    let col = cols.into_iter().map(|r| r.is_low().unwrap()).collect();
-                    r.set_high().unwrap();
-                    col
-                })
-                .collect(),
-        )
+        self.rows
+            .into_iter()
+            .map(|r| {
+                r.set_low()?;
+                let col = cols
+                    .into_iter()
+                    .map(|c| c.is_low())
+                    .collect::<Result<Vec<_, C::Len>, E>>()?
+                    .into_iter()
+                    .collect();
+                r.set_high()?;
+                Ok(col)
+            })
+            .collect::<Result<Vec<_, R::Len>, E>>()
+            .map(|res| PressedKeys(res.into_iter().collect()))
     }
 }
 
