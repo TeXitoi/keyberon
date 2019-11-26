@@ -103,7 +103,7 @@ pub enum KeyCode {
     KpDot,
     NonUsBslash, // Non-US \ and | (Typically near the Left-Shift key)
     Application, // 0x65
-    Power, // not a key, used for errors
+    Power,       // not a key, used for errors
     KpEqual,
     F13,
     F14,
@@ -131,11 +131,11 @@ pub enum KeyCode {
     Mute,
     VolUp, // 0x80
     VolDown,
-    LockingCapsLock, // deprecated
-    LockingNumLock, // deprecated
+    LockingCapsLock,   // deprecated
+    LockingNumLock,    // deprecated
     LockingScrollLock, // deprecated
-    KpComma, // used for the brazilian keypad period (.) key
-    KpEqualSign, // Used on AS/400 keyboard
+    KpComma,           // used for the brazilian keypad period (.) key
+    KpEqualSign,       // Used on AS/400 keyboard
     Intl1,
     Intl2,
     Intl3,
@@ -180,7 +180,6 @@ pub enum KeyCode {
     RGui, // 0xE7
 
     // Unofficial
-
     MediaPlayPause = 0xE8,
     MediaStopCD,
     MediaPreviousSong,
