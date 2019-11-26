@@ -103,6 +103,71 @@ pub enum KeyCode {
     KpDot,
     NonUsBslash, // Non-US \ and | (Typically near the Left-Shift key)
     Application, // 0x65
+    Power, // not a key, used for errors
+    KpEqual,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21, // 0x70
+    F22,
+    F23,
+    F24,
+    Execute,
+    Help,
+    Menu,
+    Select,
+    Stop,
+    Again,
+    Undo,
+    Cut,
+    Copy,
+    Paste,
+    Find,
+    Mute,
+    VolUp, // 0x80
+    VolDown,
+    LockingCapsLock, // deprecated
+    LockingNumLock, // deprecated
+    LockingScrollLock, // deprecated
+    KpComma, // used for the brazilian keypad period (.) key
+    KpEqualSign, // Used on AS/400 keyboard
+    Intl1,
+    Intl2,
+    Intl3,
+    Intl4,
+    Intl5,
+    Intl6,
+    Intl7,
+    Intl8,
+    Intl9,
+    Lang1, // 0x90
+    Lang2,
+    Lang3,
+    Lang4,
+    Lang5,
+    Lang6,
+    Lang7,
+    Lang8,
+    Lang9,
+    AltErase,
+    SysReq,
+    Cancel,
+    Clear,
+    Prior,
+    Return,
+    Separator,
+    Out, // 0xA0
+    Oper,
+    ClearAgain,
+    CrSel,
+    ExSel,
+
+    // According to QMK, 0xA5-0xDF are not usable on modern keyboards
 
     // Modifiers
     LCtrl = 0xE0,
@@ -113,6 +178,29 @@ pub enum KeyCode {
     RShift,
     RAlt,
     RGui, // 0xE7
+
+    // Unofficial
+
+    MediaPlayPause = 0xE8,
+    MediaStopCD,
+    MediaPreviousSong,
+    MediaNextSong,
+    MediaEjectCD,
+    MediaVolUp,
+    MediaVolDown,
+    MediaMute,
+    MediaWWW, // 0xF0
+    MediaBack,
+    MediaForward,
+    MediaStop,
+    MediaFind,
+    MediaScrollUp,
+    MediaScrollDown,
+    MediaEdit,
+    MediaSleep,
+    MeidaCoffee,
+    MediaRefresh,
+    MediaCalc, // 0xFB
 }
 impl KeyCode {
     pub fn is_modifier(self) -> bool {
