@@ -4,11 +4,11 @@
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U15, U5};
 use keyberon::action::Action::{self, *};
-use keyberon::action::{d, k, l, m};
+use keyberon::action::{d, k, m};
 use keyberon::debounce::Debouncer;
-use keyberon::key_code::{KbHidReport, KeyCode};
 use keyberon::impl_heterogenous_array;
 use keyberon::key_code::KeyCode::*;
+use keyberon::key_code::{KbHidReport, KeyCode};
 use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
 use panic_semihosting as _;
@@ -78,21 +78,24 @@ impl_heterogenous_array! {
 const CUT: Action = m(&[LShift, Delete]);
 const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
+const C_SP: Action = HoldTap(LCtrl, Space);
+const L1_ENTER: Action = LayerTap(1, Enter);
+const C_ENTER: Action = m(&[LCtrl, Enter]);
 
 #[rustfmt::skip]
 pub static LAYERS: keyberon::layout::Layers = &[
     &[
-        &[k(Grave),   k(Kb1),k(Kb2),k(Kb3), k(Kb4),  k(Kb5),k(KpMinus),k(KpSlash),k(KpAsterisk),k(Kb6),   k(Kb7),  k(Kb8), k(Kb9),  k(Kb0),   k(Minus)   ],
-        &[k(Tab),     k(Q),  k(W),  k(E),   k(R),    k(T),     k(Kp7), k(Kp8),    k(Kp9),       k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
-        &[k(RBracket),k(A),  k(S),  k(D),   k(F),    k(G),     k(Kp4), k(Kp5),    k(Kp6),       k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
-        &[k(Equal),   k(Z),  k(X),  k(C),   k(V),    k(B),     k(Kp1), k(Kp2),    k(Kp3),       k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
-        &[k(LCtrl),   l(1), k(LGui),k(LAlt),k(Space),k(LShift),k(Kp0), k(KpDot),  k(KpPlus),    k(RShift),k(Enter),k(RAlt),k(BSpace),k(Escape),k(RCtrl)  ],
+        &[k(Grave),   k(Kb1),k(Kb2),k(Kb3), k(Kb4),k(Kb5),k(KpMinus),k(KpSlash),k(KpAsterisk),k(Kb6),   k(Kb7),  k(Kb8), k(Kb9),  k(Kb0),   k(Minus)   ],
+        &[k(Tab),     k(Q),  k(W),  k(E),   k(R),  k(T),     k(Kp7), k(Kp8),    k(Kp9),       k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
+        &[k(RBracket),k(A),  k(S),  k(D),   k(F),  k(G),     k(Kp4), k(Kp5),    k(Kp6),       k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
+        &[k(Equal),   k(Z),  k(X),  k(C),   k(V),  k(B),     k(Kp1), k(Kp2),    k(Kp3),       k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
+        &[Trans,      Trans, k(LGui),k(LAlt),C_SP, k(LShift),k(Kp0), k(KpDot),  k(KpPlus),    k(RShift),L1_ENTER,k(RAlt),k(BSpace),Trans,  Trans      ],
     ], &[
-        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5),     k(F6),Trans,Trans,Trans,k(F7),k(F8),  k(F9),  k(F10), k(F11),  k(F12)   ],
-        &[k(Escape),  Trans,    k(Mute),   k(VolUp),k(VolDown),k(MediaCalc),Trans,Trans,Trans,k(MediaPlayPause),k(MediaStopCD),k(MediaPreviousSong),k(MediaNextSong),  Trans,   k(PgUp)  ],
-        &[d(0),       d(1),     k(NumLock),Trans,   Trans,     Trans,Trans,Trans,Trans,Trans,k(Left),k(Down),k(Up),  k(Right),k(PgDown)],
-        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE,     Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(Home),k(Up),   k(End)   ],
-        &[Trans,      Trans,    Trans,     Trans,   Trans,     Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(Left),k(Down), k(Right) ],
+        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5),     k(F6),Trans,Trans,Trans,k(F7),  k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
+        &[k(Escape),  Trans,    k(Escape), k(VolUp),k(VolDown),Trans,Trans,Trans,Trans,Trans,  k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
+        &[d(0),       d(1),     k(NumLock),Trans,   Trans,     Trans,Trans,Trans,Trans,Trans,  k(Left),k(Down),  k(Up),  k(Right),Trans ],
+        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE,     Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
+        &[Trans,      Trans,    Trans,     Trans,   Trans,     C_ENTER,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
     ]
 ];
 
@@ -194,8 +197,12 @@ const APP: () = {
 
         send_report(c.resources.layout.tick(), &mut c.resources.usb_class);
 
-        if !c.resources.debouncer.update(c.resources.matrix.get().void_unwrap()) {
-            return
+        if !c
+            .resources
+            .debouncer
+            .update(c.resources.matrix.get().void_unwrap())
+        {
+            return;
         }
         for event in c.resources.debouncer.events() {
             send_report(c.resources.layout.event(event), &mut c.resources.usb_class);

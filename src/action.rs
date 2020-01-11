@@ -10,6 +10,8 @@ pub enum Action {
     MultipleKeyCodes(&'static [KeyCode]),
     Layer(usize),
     DefaultLayer(usize),
+    HoldTap(KeyCode, KeyCode),
+    LayerTap(usize, KeyCode),
 }
 impl Action {
     pub fn layout(self) -> Option<usize> {

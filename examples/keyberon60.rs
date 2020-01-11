@@ -6,9 +6,9 @@ use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
 use keyberon::action::{d, k, l, m};
 use keyberon::debounce::Debouncer;
-use keyberon::key_code::{KbHidReport, KeyCode};
 use keyberon::impl_heterogenous_array;
 use keyberon::key_code::KeyCode::*;
+use keyberon::key_code::{KbHidReport, KeyCode};
 use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
 use panic_semihosting as _;
@@ -188,8 +188,12 @@ const APP: () = {
 
         send_report(c.resources.layout.tick(), &mut c.resources.usb_class);
 
-        if !c.resources.debouncer.update(c.resources.matrix.get().void_unwrap()) {
-            return
+        if !c
+            .resources
+            .debouncer
+            .update(c.resources.matrix.get().void_unwrap())
+        {
+            return;
         }
         for event in c.resources.debouncer.events() {
             send_report(c.resources.layout.event(event), &mut c.resources.usb_class);

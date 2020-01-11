@@ -30,20 +30,80 @@ enum State {
         value: usize,
         coord: (usize, usize),
     },
+    HoldTap {
+        coord: (usize, usize),
+        timeout: u16,
+        hold: KeyCode,
+        tap: KeyCode,
+    },
+    LayerTap {
+        coord: (usize, usize),
+        timeout: u16,
+        layer: usize,
+        tap: KeyCode,
+    },
+    PhantomKey {
+        keycode: KeyCode,
+    },
 }
 impl State {
     fn keycode(&self) -> Option<KeyCode> {
         match self {
-            NormalKey { keycode, .. } => Some(*keycode),
+            NormalKey { keycode, .. } | PhantomKey { keycode } => Some(*keycode),
             _ => None,
         }
     }
     fn tick(&self) -> Option<Self> {
-        Some(*self)
+        match *self {
+            PhantomKey { .. } => None,
+            HoldTap {
+                timeout,
+                hold,
+                tap,
+                coord,
+            } => {
+                if timeout > 0 {
+                    Some(HoldTap {
+                        timeout: timeout - 1,
+                        hold,
+                        tap,
+                        coord,
+                    })
+                } else {
+                    Some(NormalKey {
+                        coord,
+                        keycode: hold,
+                    })
+                }
+            }
+            LayerTap {
+                timeout,
+                layer,
+                tap,
+                coord,
+            } => {
+                if timeout > 0 {
+                    Some(LayerTap {
+                        timeout: timeout - 1,
+                        layer,
+                        tap,
+                        coord,
+                    })
+                } else {
+                    Some(LayerModifier {
+                        coord,
+                        value: layer,
+                    })
+                }
+            }
+            _ => Some(*self),
+        }
     }
     fn release(&self, c: (usize, usize)) -> Option<Self> {
-        match self {
-            NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == &c => None,
+        match *self {
+            NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == c => None,
+            HoldTap { coord, tap, .. } if coord == c => Some(PhantomKey { keycode: tap }),
+            LayerTap { coord, tap, .. } if coord == c => Some(PhantomKey { keycode: tap }),
             _ => Some(*self),
         }
     }
@@ -69,6 +129,7 @@ impl Layout {
     }
     pub fn tick<'a>(&'a mut self) -> impl Iterator<Item = KeyCode> + 'a {
         self.states = self.states.iter().filter_map(State::tick).collect();
+        self.update_layer();
         self.keycodes()
     }
     pub fn event<'a>(&'a mut self, event: Event) -> impl Iterator<Item = KeyCode> + 'a {
@@ -115,6 +176,18 @@ impl Layout {
                     self.default_layer = value
                 }
             }
+            HoldTap(hold, tap) => drop(self.states.push(State::HoldTap {
+                timeout: 200,
+                coord,
+                hold,
+                tap,
+            })),
+            LayerTap(layer, tap) => drop(self.states.push(State::LayerTap {
+                timeout: 200,
+                coord,
+                layer,
+                tap,
+            })),
         }
     }
     fn update_layer(&mut self) {
