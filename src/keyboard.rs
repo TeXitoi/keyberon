@@ -29,8 +29,13 @@ impl<L> Keyboard<L> {
             leds,
         }
     }
-    pub fn set_keyboard_report(&mut self, report: KbHidReport) {
-        self.report = report;
+    pub fn set_keyboard_report(&mut self, report: KbHidReport) -> bool {
+        if report == self.report {
+            false
+        } else {
+            self.report = report;
+            true
+        }
     }
 }
 

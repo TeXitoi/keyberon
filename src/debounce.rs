@@ -44,3 +44,29 @@ impl<T: PartialEq> Debouncer<T> {
         }
     }
 }
+
+use crate::layout::Event;
+
+impl<T> Debouncer<T> {
+    pub fn events<'a, U>(&'a self) -> impl Iterator<Item = Event> + 'a
+    where
+        &'a T: IntoIterator<Item = U>,
+        U: IntoIterator<Item = &'a bool>,
+        U::IntoIter: 'a,
+    {
+        self.new
+            .into_iter()
+            .zip(self.cur.into_iter())
+            .enumerate()
+            .flat_map(move |(i, (o, n))| {
+                o.into_iter()
+                    .zip(n.into_iter())
+                    .enumerate()
+                    .filter_map(move |(j, bools)| match bools {
+                        (false, true) => Some(Event::Press(i, j)),
+                        (true, false) => Some(Event::Release(i, j)),
+                        _ => None,
+                    })
+            })
+    }
+}
