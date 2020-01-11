@@ -4,7 +4,7 @@
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
-use keyberon::action::{d, k, l, m};
+use keyberon::action::{d, k, m};
 use keyberon::debounce::Debouncer;
 use keyberon::impl_heterogenous_array;
 use keyberon::key_code::KeyCode::*;
@@ -75,21 +75,24 @@ impl_heterogenous_array! {
 const CUT: Action = m(&[LShift, Delete]);
 const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
+const C_SP: Action = HoldTap(LCtrl, Space);
+const L1_ENTER: Action = LayerTap(1, Enter);
+const CSPACE: Action = m(&[LCtrl, Space]);
 
 #[rustfmt::skip]
 pub static LAYERS: keyberon::layout::Layers = &[
     &[
-        &[k(Grave),   k(Kb1),k(Kb2),k(Kb3), k(Kb4),  k(Kb5),   k(Kb6),   k(Kb7),  k(Kb8), k(Kb9),  k(Kb0),   k(Minus)   ],
-        &[k(Tab),     k(Q),  k(W),  k(E),   k(R),    k(T),     k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
-        &[k(RBracket),k(A),  k(S),  k(D),   k(F),    k(G),     k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
-        &[k(Equal),   k(Z),  k(X),  k(C),   k(V),    k(B),     k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
-        &[k(LCtrl),   l(1), k(LGui),k(LAlt),k(Space),k(LShift),k(RShift),k(Enter),k(RAlt),k(BSpace),k(Escape),k(RCtrl)  ],
+        &[k(Grave),   k(Kb1),k(Kb2),k(Kb3), k(Kb4),k(Kb5),   k(Kb6),   k(Kb7),  k(Kb8), k(Kb9),  k(Kb0),   k(Minus)   ],
+        &[k(Tab),     k(Q),  k(W),  k(E),   k(R),  k(T),     k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
+        &[k(RBracket),k(A),  k(S),  k(D),   k(F),  k(G),     k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
+        &[k(Equal),   k(Z),  k(X),  k(C),   k(V),  k(B),     k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
+        &[Trans,      Trans, k(LGui),k(LAlt),C_SP, k(LShift),k(RShift),L1_ENTER,k(RAlt),k(BSpace),Trans,   Trans      ],
     ], &[
-        &[k(F1),      k(F2),    k(F3),k(F4),k(F5),k(F6),k(F7),k(F8),  k(F9),  k(F10), k(F11),  k(F12)   ],
-        &[k(Escape),  Trans,    Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,  Trans,   k(PgUp)  ],
-        &[d(0),       d(1),     Trans,Trans,Trans,Trans,Trans,k(Left),k(Down),k(Up),  k(Right),k(PgDown)],
-        &[k(CapsLock),k(Delete),CUT,  COPY, PASTE,Trans,Trans,Trans,  Trans,  k(Home),k(Up),   k(End)   ],
-        &[Trans,      Trans,    Trans,Trans,Trans,Trans,Trans,Trans,  Trans,  k(Left),k(Down), k(Right) ],
+        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5), k(F6),k(F7),k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
+        &[k(Escape),  Trans,    Trans,     k(Escape),Trans,Trans,Trans,k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
+        &[d(0),       d(1),     k(NumLock),Trans,   Trans, Trans,Trans,k(Left),k(Down),  k(Up),  k(Right),Trans ],
+        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE, Trans,Trans,Trans,  Trans,    Trans,  Trans,   Trans ],
+        &[Trans,      Trans,    Trans,     Trans,   CSPACE,Trans,Trans,Trans,  Trans,    Trans,  Trans,   Trans ],
     ]
 ];
 

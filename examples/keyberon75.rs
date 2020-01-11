@@ -80,7 +80,7 @@ const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
 const C_SP: Action = HoldTap(LCtrl, Space);
 const L1_ENTER: Action = LayerTap(1, Enter);
-const C_ENTER: Action = m(&[LCtrl, Enter]);
+const CSPACE: Action = m(&[LCtrl, Space]);
 
 #[rustfmt::skip]
 pub static LAYERS: keyberon::layout::Layers = &[
@@ -89,13 +89,13 @@ pub static LAYERS: keyberon::layout::Layers = &[
         &[k(Tab),     k(Q),  k(W),  k(E),   k(R),  k(T),     k(Kp7), k(Kp8),    k(Kp9),       k(Y),     k(U),    k(I),   k(O),    k(P),     k(LBracket)],
         &[k(RBracket),k(A),  k(S),  k(D),   k(F),  k(G),     k(Kp4), k(Kp5),    k(Kp6),       k(H),     k(J),    k(K),   k(L),    k(SColon),k(Quote)   ],
         &[k(Equal),   k(Z),  k(X),  k(C),   k(V),  k(B),     k(Kp1), k(Kp2),    k(Kp3),       k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
-        &[Trans,      Trans, k(LGui),k(LAlt),C_SP, k(LShift),k(Kp0), k(KpDot),  k(KpPlus),    k(RShift),L1_ENTER,k(RAlt),k(BSpace),Trans,  Trans      ],
+        &[Trans,      Trans, k(LGui),k(LAlt),C_SP, k(LShift),k(Kp0), k(KpDot),  k(KpPlus),    k(RShift),L1_ENTER,k(RAlt),k(BSpace),Trans,   Trans      ],
     ], &[
-        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5),     k(F6),Trans,Trans,Trans,k(F7),  k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
-        &[k(Escape),  Trans,    k(Escape), k(VolUp),k(VolDown),Trans,Trans,Trans,Trans,Trans,  k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
-        &[d(0),       d(1),     k(NumLock),Trans,   Trans,     Trans,Trans,Trans,Trans,Trans,  k(Left),k(Down),  k(Up),  k(Right),Trans ],
-        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE,     Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
-        &[Trans,      Trans,    Trans,     Trans,   Trans,     C_ENTER,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
+        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5), k(F6),Trans,Trans,Trans,k(F7),  k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
+        &[k(Escape),  Trans,    Trans,     k(Escape),Trans,Trans,Trans,Trans,Trans,Trans,  k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
+        &[d(0),       d(1),     k(NumLock),Trans,   Trans, Trans,Trans,Trans,Trans,Trans,  k(Left),k(Down),  k(Up),  k(Right),Trans ],
+        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE, Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
+        &[Trans,      Trans,    Trans,     Trans,   CSPACE,Trans,Trans,Trans,Trans,Trans,  Trans,  Trans,    Trans,  Trans,   Trans ],
     ]
 ];
 
