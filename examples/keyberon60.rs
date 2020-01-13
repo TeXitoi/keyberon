@@ -88,12 +88,12 @@ pub static LAYERS: keyberon::layout::Layers = &[
         &[k(Equal),   k(Z),  k(X),  k(C),   k(V),  k(B),     k(N),     k(M),    k(Comma),k(Dot), k(Slash), k(Bslash)  ],
         &[Trans,      Trans, k(LGui),k(LAlt),C_SP, k(LShift),k(RShift),L1_ENTER,k(RAlt),k(BSpace),Trans,   Trans      ],
     ], &[
-        &[k(F1),      k(F2),    k(F3),     k(F4),   k(F5), k(F6),k(F7),k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
-        &[k(Escape),  Trans,    Trans,     k(Escape),Trans,Trans,Trans,k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
-        &[d(0),       d(1),     k(NumLock),Trans,   Trans, Trans,Trans,k(Left),k(Down),  k(Up),  k(Right),Trans ],
-        &[k(CapsLock),k(Delete),CUT,       COPY,    PASTE, Trans,Trans,Trans,  Trans,    Trans,  Trans,   Trans ],
-        &[Trans,      Trans,    Trans,     Trans,   CSPACE,Trans,Trans,Trans,  Trans,    Trans,  Trans,   Trans ],
-    ]
+        &[k(F1),k(F2),k(F3),     k(F4),k(F5),    k(F6),k(F7),      k(F8),  k(F9),    k(F10), k(F11),  k(F12)],
+        &[Trans,Trans,Trans,     Trans,Trans,    Trans,Trans,      Trans,  k(Delete),Trans,  Trans,   Trans ],
+        &[d(0), d(1), k(NumLock),Trans,k(Escape),Trans,k(CapsLock),k(Left),k(Down),  k(Up),  k(Right),Trans ],
+        &[Trans,Trans,CUT,       COPY, PASTE,    Trans,Trans,      k(Home),k(PgDown),k(PgUp),k(End),  Trans ],
+        &[Trans,Trans,Trans,     Trans,CSPACE,   Trans,Trans,      Trans,  Trans,    Trans,  Trans,   Trans ],
+    ],
 ];
 
 #[app(device = stm32f1xx_hal::pac, peripherals = true)]
