@@ -1,6 +1,7 @@
 #![no_main]
 #![no_std]
 
+use core::convert::Infallible;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U12, U5};
 use keyberon::action::Action::{self, *};
@@ -13,13 +14,12 @@ use keyberon::layout::Layout;
 use keyberon::matrix::{Matrix, PressedKeys};
 use panic_semihosting as _;
 use rtfm::app;
-use stm32_usbd::{UsbBus, UsbBusType};
 use stm32f1xx_hal::gpio::{gpioa::*, gpiob::*, Input, Output, PullUp, PushPull};
 use stm32f1xx_hal::prelude::*;
+use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
 use stm32f1xx_hal::{gpio, pac, timer};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::class::UsbClass as _;
-use void::{ResultVoidExt, Void};
 
 type UsbClass = keyberon::Class<'static, UsbBusType, Leds>;
 type UsbDevice = keyberon::Device<'static, UsbBusType>;
@@ -30,9 +30,9 @@ pub struct Leds {
 impl keyberon::keyboard::Leds for Leds {
     fn caps_lock(&mut self, status: bool) {
         if status {
-            self.caps_lock.set_low().void_unwrap()
+            self.caps_lock.set_low().unwrap()
         } else {
-            self.caps_lock.set_high().void_unwrap()
+            self.caps_lock.set_high().unwrap()
         }
     }
 }
@@ -53,7 +53,7 @@ pub struct Cols(
 );
 impl_heterogenous_array! {
     Cols,
-    dyn InputPin<Error = Void>,
+    dyn InputPin<Error = Infallible>,
     U12,
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 }
@@ -67,7 +67,7 @@ pub struct Rows(
 );
 impl_heterogenous_array! {
     Rows,
-    dyn OutputPin<Error = Void>,
+    dyn OutputPin<Error = Infallible>,
     U5,
     [0, 1, 2, 3, 4]
 }
@@ -104,7 +104,7 @@ const APP: () = {
         matrix: Matrix<Cols, Rows>,
         debouncer: Debouncer<PressedKeys<U5, U12>>,
         layout: Layout,
-        timer: timer::Timer<pac::TIM3>,
+        timer: timer::CountDownTimer<pac::TIM3>,
     }
 
     #[init]
@@ -126,19 +126,26 @@ const APP: () = {
         let mut gpioc = c.device.GPIOC.split(&mut rcc.apb2);
 
         let mut led = gpioc.pc13.into_push_pull_output(&mut gpioc.crh);
-        led.set_high().void_unwrap();
+        led.set_high().unwrap();
         let leds = Leds { caps_lock: led };
 
         let usb_dm = gpioa.pa11;
         let usb_dp = gpioa.pa12.into_floating_input(&mut gpioa.crh);
 
-        *USB_BUS = Some(UsbBus::new(c.device.USB, (usb_dm, usb_dp)));
+        let usb = Peripheral {
+            usb: c.device.USB,
+            pin_dm: usb_dm,
+            pin_dp: usb_dp,
+        };
+
+        *USB_BUS = Some(UsbBus::new(usb));
         let usb_bus = USB_BUS.as_ref().unwrap();
 
         let usb_class = keyberon::new_class(usb_bus, leds);
         let usb_dev = keyberon::new_device(usb_bus);
 
-        let mut timer = timer::Timer::tim3(c.device.TIM3, 1.khz(), clocks, &mut rcc.apb1);
+        let mut timer =
+            timer::Timer::tim3(c.device.TIM3, &clocks, &mut rcc.apb1).start_count_down(1.khz());
         timer.listen(timer::Event::Update);
 
         let matrix = Matrix::new(
@@ -170,7 +177,7 @@ const APP: () = {
             usb_class,
             timer,
             debouncer: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
-            matrix: matrix.void_unwrap(),
+            matrix: matrix.unwrap(),
             layout: Layout::new(LAYERS),
         }
     }
@@ -194,7 +201,7 @@ const APP: () = {
         if !c
             .resources
             .debouncer
-            .update(c.resources.matrix.get().void_unwrap())
+            .update(c.resources.matrix.get().unwrap())
         {
             return;
         }
