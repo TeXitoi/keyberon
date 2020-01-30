@@ -10,6 +10,7 @@ generic-array = "0.13"
 embedded-hal = "0.2"
 usb-device = "0.2.0"
 heapless = "0.5"
+arraydeque = { version = "0.4.5", default-features = false }
 
 [dev-dependencies]
 void = { version = "1", default-features = false }

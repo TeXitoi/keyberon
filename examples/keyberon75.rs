@@ -202,18 +202,15 @@ const APP: () = {
     fn tick(mut c: tick::Context) {
         c.resources.timer.clear_update_interrupt_flag();
 
-        send_report(c.resources.layout.tick(), &mut c.resources.usb_class);
-
-        if !c
-            .resources
+        if c.resources
             .debouncer
             .update(c.resources.matrix.get().unwrap())
         {
-            return;
+            for event in c.resources.debouncer.events() {
+                send_report(c.resources.layout.event(event), &mut c.resources.usb_class);
+            }
         }
-        for event in c.resources.debouncer.events() {
-            send_report(c.resources.layout.event(event), &mut c.resources.usb_class);
-        }
+        send_report(c.resources.layout.tick(), &mut c.resources.usb_class);
     }
 };
 
