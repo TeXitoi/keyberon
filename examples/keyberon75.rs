@@ -182,7 +182,7 @@ const APP: () = {
             usb_dev,
             usb_class,
             timer,
-            debouncer: Debouncer::new(PressedKeys::new(), PressedKeys::new(), 5),
+            debouncer: Debouncer::new(PressedKeys::default(), PressedKeys::default(), 5),
             matrix: matrix.unwrap(),
             layout: Layout::new(LAYERS),
         }
@@ -216,7 +216,7 @@ const APP: () = {
 
 fn send_report(iter: impl Iterator<Item = KeyCode>, usb_class: &mut resources::usb_class<'_>) {
     use rtfm::Mutex;
-    let report = KbHidReport::from_iter(iter);
+    let report: KbHidReport = iter.collect();
     if usb_class.lock(|k| k.device_mut().set_keyboard_report(report.clone())) {
         while let Ok(0) = usb_class.lock(|k| k.write(report.as_bytes())) {}
     }

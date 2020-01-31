@@ -12,7 +12,6 @@ pub type Layers = &'static [&'static [&'static [Action]]];
 pub struct Layout {
     layers: Layers,
     default_layer: usize,
-    current_layer: usize,
     states: Vec<State, U64>,
     waiting: Option<WaitingState>,
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
@@ -160,25 +159,23 @@ impl Layout {
         Self {
             layers,
             default_layer: 0,
-            current_layer: 0,
             states: Vec::new(),
             waiting: None,
             stacked: ArrayDeque::new(),
         }
     }
-    pub fn keycodes<'a>(&'a mut self) -> impl Iterator<Item = KeyCode> + 'a {
-        self.update_layer();
+    pub fn keycodes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
         self.states.iter().filter_map(State::keycode)
     }
     fn waiting_into_hold(&mut self) {
         if let Some(w) = &mut self.waiting {
-            drop(self.states.push(w.as_hold()));
+            let _ = self.states.push(w.as_hold());
             self.waiting = None;
         }
     }
     fn waiting_into_tap(&mut self) {
         if let Some(w) = &mut self.waiting {
-            drop(self.states.push(w.as_tap()));
+            let _ = self.states.push(w.as_tap());
             self.waiting = None;
         }
     }
@@ -191,7 +188,9 @@ impl Layout {
                     self.waiting_into_hold();
                 }
             }
-            None => drop(self.stacked.pop_front().map(|s| self.unstack(s))),
+            None => {
+                let _ = self.stacked.pop_front().map(|s| self.unstack(s));
+            }
         }
         self.keycodes()
     }
@@ -207,7 +206,7 @@ impl Layout {
                     .collect()
             }
             Press(x, y) => {
-                let action = self.press_as_action((x, y), self.current_layer);
+                let action = self.press_as_action((x, y), self.current_layer());
                 match WaitingState::try_from_action(action, (x, y), stacked.since) {
                     None => self.do_action(action, (x, y)),
                     Some(w) => {
@@ -215,8 +214,7 @@ impl Layout {
                         if let Some(Stacked { since, .. }) = self
                             .stacked
                             .iter()
-                            .filter(|s| w.is_corresponding_release(&s.event))
-                            .next()
+                            .find(|s| w.is_corresponding_release(&s.event))
                         {
                             if w.timeout() >= stacked.since - since {
                                 self.waiting_into_tap();
@@ -268,15 +266,15 @@ impl Layout {
         match *action {
             No | Trans => (),
             KeyCode(keycode) | HoldTap(keycode, _) => {
-                drop(self.states.push(NormalKey { coord, keycode }))
+                let _ = self.states.push(NormalKey { coord, keycode });
             }
             MultipleKeyCodes(v) => {
                 for &keycode in v {
-                    drop(self.states.push(NormalKey { coord, keycode }));
+                    let _ = self.states.push(NormalKey { coord, keycode });
                 }
             }
             Layer(value) | LayerTap(value, _) => {
-                drop(self.states.push(LayerModifier { value, coord }))
+                let _ = self.states.push(LayerModifier { value, coord });
             }
             DefaultLayer(value) => {
                 if value < self.layers.len() {
@@ -285,7 +283,7 @@ impl Layout {
             }
         }
     }
-    fn update_layer(&mut self) {
+    fn current_layer(&self) -> usize {
         let mut iter = self.states.iter().filter_map(State::get_layer);
         let mut layer = match iter.next() {
             None => self.default_layer,
@@ -294,6 +292,6 @@ impl Layout {
         for l in iter {
             layer += l;
         }
-        self.current_layer = layer;
+        layer
     }
 }

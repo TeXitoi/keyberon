@@ -217,16 +217,22 @@ impl KeyCode {
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct KbHidReport([u8; 8]);
 
-impl KbHidReport {
-    pub fn as_bytes(&self) -> &[u8] {
-        &self.0
-    }
-    pub fn from_iter(iter: impl Iterator<Item = KeyCode>) -> Self {
+impl core::iter::FromIterator<KeyCode> for KbHidReport {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = KeyCode>,
+    {
         let mut res = Self::default();
         for kc in iter {
             res.pressed(kc);
         }
         res
+    }
+}
+
+impl KbHidReport {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
     }
     pub fn pressed(&mut self, kc: KeyCode) {
         use KeyCode::*;

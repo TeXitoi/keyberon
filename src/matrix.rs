@@ -88,7 +88,7 @@ impl<C, R> Matrix<C, R> {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq)]
 pub struct PressedKeys<U, V>(pub GenericArray<GenericArray<bool, V>, U>)
 where
     V: ArrayLength<bool>,
@@ -99,9 +99,6 @@ where
     V: ArrayLength<bool>,
     U: ArrayLength<GenericArray<bool, V>>,
 {
-    pub fn new() -> Self {
-        Self(Default::default())
-    }
     pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + Clone + 'a {
         self.0.iter().enumerate().flat_map(|(i, r)| {
             r.iter()

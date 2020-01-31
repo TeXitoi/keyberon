@@ -232,9 +232,8 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
         let req = xfer.request();
         if req.request_type == RequestType::Class && req.recipient == Recipient::Interface {
             if let Some(request) = Request::new(req.request) {
-                match request {
-                    Request::SetReport => self.set_report(xfer),
-                    _ => (),
+                if request == Request::SetReport {
+                    self.set_report(xfer);
                 }
             }
         }
