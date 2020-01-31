@@ -17,12 +17,13 @@ pub struct Layout {
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
 }
 
+#[derive(Debug)]
 pub enum Event {
     Press(usize, usize),
     Release(usize, usize),
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum State {
     NormalKey {
         keycode: KeyCode,
@@ -59,7 +60,7 @@ impl State {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 enum WaitingState {
     HoldTap {
         coord: (usize, usize),
@@ -81,11 +82,6 @@ impl WaitingState {
                 *timeout = timeout.saturating_sub(1);
                 *timeout == 0
             }
-        }
-    }
-    fn timeout(&self) -> u16 {
-        match *self {
-            HoldTap { timeout, .. } | LayerTap { timeout, .. } => timeout,
         }
     }
     fn as_hold(&self) -> State {
@@ -139,6 +135,7 @@ impl WaitingState {
     }
 }
 
+#[derive(Debug)]
 struct Stacked {
     event: Event,
     since: u16,
@@ -216,7 +213,7 @@ impl Layout {
                             .iter()
                             .find(|s| w.is_corresponding_release(&s.event))
                         {
-                            if w.timeout() >= stacked.since - since {
+                            if 200 >= stacked.since - since {
                                 self.waiting_into_tap();
                             } else {
                                 self.waiting_into_hold();
@@ -293,5 +290,45 @@ impl Layout {
             layer += l;
         }
         layer
+    }
+}
+
+#[cfg(test)]
+mod test {
+    extern crate std;
+    use super::{Event::*, Layers, Layout};
+    use crate::action::m;
+    use crate::action::Action::*;
+    use crate::key_code::KeyCode;
+    use crate::key_code::KeyCode::*;
+    use std::collections::BTreeSet;
+
+    fn assert_keys(expected: &[KeyCode], iter: impl Iterator<Item = KeyCode>) {
+        let expected: BTreeSet<_> = expected.iter().copied().collect();
+        let tested = iter.collect();
+        assert_eq!(expected, tested);
+    }
+
+    #[test]
+    fn test() {
+        static LAYERS: Layers = &[
+            &[&[LayerTap(1, Space), HoldTap(LCtrl, Enter)]],
+            &[&[Trans, m(&[LCtrl, Enter])]],
+        ];
+        let mut layout = Layout::new(LAYERS);
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Press(0, 1)));
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Press(0, 0)));
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Release(0, 0)));
+        for _ in 0..197 {
+            assert_keys(&[], layout.tick());
+        }
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[LCtrl, Space], layout.tick());
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[LCtrl], layout.event(Release(0, 1)));
+        assert_keys(&[], layout.tick());
     }
 }

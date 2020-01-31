@@ -8,9 +8,14 @@ env: RUN=BUILD
 before_script: rustup target add thumbv7m-none-eabi
 script:
  - cargo build --release --examples
+ - cargo test --tests --target x86_64-unknown-linux-gnu
 matrix:
   include:
     - rust: stable
       env: RUN=FMT
-      before_script: rustup component add rustfmt-preview
-      script: cargo fmt --all -- --check
+      before_script:
+       - rustup component add rustfmt clippy
+       - rustup target add thumbv7m-none-eabi
+      script:
+       - cargo fmt --all -- --check
+       - cargo clippy --all

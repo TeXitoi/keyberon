@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum KeyCode {
     No = 0x00,
