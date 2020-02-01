@@ -2,7 +2,7 @@ use crate::key_code::KeyCode;
 use core::iter;
 use either::Either;
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action {
     No,
     Trans,
@@ -10,8 +10,7 @@ pub enum Action {
     MultipleKeyCodes(&'static [KeyCode]),
     Layer(usize),
     DefaultLayer(usize),
-    HoldTap(KeyCode, KeyCode),
-    LayerTap(usize, KeyCode),
+    HoldTap(u16, &'static Action, &'static Action),
 }
 impl Action {
     pub fn layout(self) -> Option<usize> {

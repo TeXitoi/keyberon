@@ -5,7 +5,7 @@ use core::convert::Infallible;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::typenum::{U15, U5};
 use keyberon::action::Action::{self, *};
-use keyberon::action::{d, k, m};
+use keyberon::action::{d, k, l, m};
 use keyberon::debounce::Debouncer;
 use keyberon::impl_heterogenous_array;
 use keyberon::key_code::KeyCode::*;
@@ -78,8 +78,8 @@ impl_heterogenous_array! {
 const CUT: Action = m(&[LShift, Delete]);
 const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
-const C_ENTER: Action = HoldTap(LCtrl, Enter);
-const L1_SP: Action = LayerTap(1, Space);
+const C_ENTER: Action = HoldTap(200, &k(LCtrl), &k(Enter));
+const L1_SP: Action = HoldTap(200, &l(1), &k(Space));
 const CENTER: Action = m(&[LCtrl, Enter]);
 
 #[rustfmt::skip]
