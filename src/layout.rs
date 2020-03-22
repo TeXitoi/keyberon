@@ -180,12 +180,12 @@ impl Layout {
             .and_then(|l| l.get(coord.0))
             .and_then(|l| l.get(coord.1));
         match action {
-            None => &No,
+            None => &NoOp,
             Some(Trans) => {
                 if layer != self.default_layer {
                     self.press_as_action(coord, self.default_layer)
                 } else {
-                    &No
+                    &NoOp
                 }
             }
             Some(action) => action,
@@ -195,8 +195,8 @@ impl Layout {
         assert!(self.waiting.is_none());
         use Action::*;
         match *action {
-            No | Trans => (),
-            HoldTap(timeout, hold, tap) => {
+            NoOp | Trans => (),
+            HoldTap { timeout, hold, tap } => {
                 let waiting = WaitingState {
                     coord,
                     timeout: timeout.saturating_sub(delay),
@@ -267,8 +267,16 @@ mod test {
     fn test() {
         static LAYERS: Layers = &[
             &[&[
-                HoldTap(200, &l(1), &k(Space)),
-                HoldTap(200, &k(LCtrl), &k(Enter)),
+                HoldTap {
+                    timeout: 200,
+                    hold: &l(1),
+                    tap: &k(Space),
+                },
+                HoldTap {
+                    timeout: 200,
+                    hold: &k(LCtrl),
+                    tap: &k(Enter),
+                },
             ]],
             &[&[Trans, m(&[LCtrl, Enter])]],
         ];

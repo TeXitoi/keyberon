@@ -1,10 +1,17 @@
+/// Define a key code according to the HID specification.  Their names
+/// correspond to the american QWERTY layout.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum KeyCode {
+    /// The "no" key, a placeholder to express nothing.
     No = 0x00,
+    /// Error if too much keys are pressed at the same time.
     ErrorRollOver,
+    /// The POST fail error.
     PostFail,
+    /// An undefined error occured.
     ErrorUndefined,
+    /// `a` and `A`.
     A,
     B,
     C,
@@ -31,33 +38,56 @@ pub enum KeyCode {
     X,
     Y,
     Z,
-    Kb1, // Keyboard 1
+    /// `1` and `!`.
+    Kb1,
+    /// `2` and `@`.
     Kb2,
+    /// `3` and `#`.
     Kb3, // 0x20
+    /// `4` and `$`.
     Kb4,
+    /// `5` and `%`.
     Kb5,
+    /// `6` and `^`.
     Kb6,
+    /// `7` and `&`.
     Kb7,
+    /// `8` and `*`.
     Kb8,
+    /// `9` and `(`.
     Kb9,
+    /// `0` and `)`.
     Kb0,
     Enter,
     Escape,
     BSpace,
     Tab,
     Space,
+    /// `-` and `_`.
     Minus,
+    /// `=` and `+`.
     Equal,
+    /// `[` and `{`.
     LBracket,
-    RBracket,  // 0x30
-    Bslash,    // \ (and |)
-    NonUsHash, // Non-US # and ~ (Typically near the Enter key)
-    SColon,    // ; (and :)
-    Quote,     // ' and "
-    Grave,     // Grave accent and tilde
-    Comma,     // , and <
-    Dot,       // . and >
-    Slash,     // / and ?
+    /// `]` and `}`.
+    RBracket, // 0x30
+    /// `\` and `|`.
+    Bslash,
+    /// Non-US `#` and `~` (Typically near the Enter key).
+    NonUsHash,
+    /// `;` and `:`.
+    SColon,
+    /// `'` and `"`.
+    Quote,
+    // How to have ` as code?
+    /// \` and `~`.
+    Grave,
+    /// `,` and `<`.
+    Comma,
+    /// `.` and `>`.
+    Dot,
+    /// `/` and `?`.
+    Slash,
     CapsLock,
     F1,
     F2,
@@ -85,11 +115,17 @@ pub enum KeyCode {
     Down,
     Up,
     NumLock,
+    /// Keypad `/`
     KpSlash,
+    /// Keypad `*`
     KpAsterisk,
+    /// Keypad `-`.
     KpMinus,
+    /// Keypad `+`.
     KpPlus,
+    /// Keypad enter.
     KpEnter,
+    /// Keypad 1.
     Kp1,
     Kp2,
     Kp3,
@@ -101,9 +137,12 @@ pub enum KeyCode {
     Kp9,
     Kp0,
     KpDot,
-    NonUsBslash, // Non-US \ and | (Typically near the Left-Shift key)
+    /// Non-US `\` and `|` (Typically near the Left-Shift key)
+    NonUsBslash,
     Application, // 0x65
-    Power,       // not a key, used for errors
+    /// not a key, used for errors
+    Power,
+    /// Keypad `=`.
     KpEqual,
     F13,
     F14,
@@ -131,11 +170,16 @@ pub enum KeyCode {
     Mute,
     VolUp, // 0x80
     VolDown,
-    LockingCapsLock,   // deprecated
-    LockingNumLock,    // deprecated
-    LockingScrollLock, // deprecated
-    KpComma,           // used for the brazilian keypad period (.) key
-    KpEqualSign,       // Used on AS/400 keyboard
+    /// Deprecated.
+    LockingCapsLock,
+    /// Deprecated.
+    LockingNumLock,
+    /// Deprecated.
+    LockingScrollLock,
+    /// Keypad `,`, also used for the brazilian keypad period (.) key.
+    KpComma,
+    /// Used on AS/400 keyboard
+    KpEqualSign,
     Intl1,
     Intl2,
     Intl3,
@@ -170,13 +214,21 @@ pub enum KeyCode {
     // According to QMK, 0xA5-0xDF are not usable on modern keyboards
 
     // Modifiers
+    /// Left Control.
     LCtrl = 0xE0,
+    /// Left Shift.
     LShift,
+    /// Left Alt.
     LAlt,
+    /// Left GUI (the Windows key).
     LGui,
+    /// Right Control.
     RCtrl,
+    /// Right Shift.
     RShift,
+    /// Right Alt (or Alt Gr).
     RAlt,
+    /// Right GUI (the Windows key).
     RGui, // 0xE7
 
     // Unofficial

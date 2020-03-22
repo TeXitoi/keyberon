@@ -75,8 +75,16 @@ impl_heterogenous_array! {
 const CUT: Action = m(&[LShift, Delete]);
 const COPY: Action = m(&[LCtrl, Insert]);
 const PASTE: Action = m(&[LShift, Insert]);
-const C_ENTER: Action = HoldTap(200, &k(LCtrl), &k(Enter));
-const L1_SP: Action = HoldTap(200, &l(1), &k(Space));
+const C_ENTER: Action = HoldTap {
+    timeout: 200,
+    hold: &k(LCtrl),
+    tap: &k(Enter),
+};
+const L1_SP: Action = HoldTap {
+    timeout: 200,
+    hold: &l(1),
+    tap: &k(Space),
+};
 const CENTER: Action = m(&[LCtrl, Enter]);
 
 #[rustfmt::skip]
