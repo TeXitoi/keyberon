@@ -16,8 +16,8 @@ pub type Device<'a, B> = UsbDevice<'a, B>;
 
 // Generic keyboard from
 // https://github.com/obdev/v-usb/blob/master/usbdrv/USB-IDs-for-free.txt
-const VID: u16 = 0x27db;
-const PID: u16 = 0x16c0;
+const VID: u16 = 0x16c0;
+const PID: u16 = 0x27db;
 
 pub fn new_class<B, L>(bus: &UsbBusAllocator<B>, leds: L) -> Class<'_, B, L>
 where
