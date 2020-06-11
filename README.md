@@ -119,3 +119,7 @@ I use the [bépo layout](https://bepo.fr), so this is what I have when I type:
 ```
 
 You can of course tune the layout as you wish easily.
+
+
+### Layout of 48
+<img src="images/Keyboard-Layout-48.svg" width=100%;/>
