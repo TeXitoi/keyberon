@@ -1,4 +1,5 @@
 use crate::layout::Event;
+use core::convert::TryInto;
 use either::Either::*;
 
 pub struct Debouncer<T> {
@@ -60,8 +61,13 @@ impl<T: PartialEq> Debouncer<T> {
                     .flat_map(move |(i, (o, n))| {
                         o.into_iter().zip(n.into_iter()).enumerate().filter_map(
                             move |(j, bools)| match bools {
-                                (false, true) => Some(Event::Press(i, j)),
-                                (true, false) => Some(Event::Release(i, j)),
+                                (false, true) => {
+                                    Some(Event::Press(i.try_into().unwrap(), j.try_into().unwrap()))
+                                }
+                                (true, false) => Some(Event::Release(
+                                    i.try_into().unwrap(),
+                                    j.try_into().unwrap(),
+                                )),
                                 _ => None,
                             },
                         )

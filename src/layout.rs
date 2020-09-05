@@ -18,20 +18,34 @@ pub struct Layout {
 
 #[derive(Debug, Copy, Clone)]
 pub enum Event {
-    Press(usize, usize),
-    Release(usize, usize),
+    Press(u8, u8),
+    Release(u8, u8),
+}
+impl Event {
+    pub fn coord(self) -> (u8, u8) {
+        match self {
+            Event::Press(i, j) => (i, j),
+            Event::Release(i, j) => (i, j),
+        }
+    }
+    pub fn transform(self, f: impl FnOnce(u8, u8) -> (u8, u8)) -> Self {
+        match self {
+            Event::Press(i, j) => {
+                let (i, j) = f(i, j);
+                Event::Press(i, j)
+            }
+            Event::Release(i, j) => {
+                let (i, j) = f(i, j);
+                Event::Release(i, j)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum State {
-    NormalKey {
-        keycode: KeyCode,
-        coord: (usize, usize),
-    },
-    LayerModifier {
-        value: usize,
-        coord: (usize, usize),
-    },
+    NormalKey { keycode: KeyCode, coord: (u8, u8) },
+    LayerModifier { value: usize, coord: (u8, u8) },
 }
 impl State {
     fn keycode(&self) -> Option<KeyCode> {
@@ -45,7 +59,7 @@ impl State {
             _ => Some(*self),
         }
     }
-    fn release(&self, c: (usize, usize)) -> Option<Self> {
+    fn release(&self, c: (u8, u8)) -> Option<Self> {
         match *self {
             NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == c => None,
             _ => Some(*self),
@@ -61,7 +75,7 @@ impl State {
 
 #[derive(Debug, Copy, Clone)]
 struct WaitingState {
-    coord: (usize, usize),
+    coord: (u8, u8),
     timeout: u16,
     hold: &'static Action,
     tap: &'static Action,
@@ -73,7 +87,7 @@ impl WaitingState {
     }
     fn is_corresponding_release(&self, event: &Event) -> bool {
         match event {
-            Event::Release(x, y) if (*x, *y) == self.coord => true,
+            Event::Release(i, j) if (*i, *j) == self.coord => true,
             _ => false,
         }
     }
@@ -144,16 +158,16 @@ impl Layout {
     fn unstack(&mut self, stacked: Stacked) {
         use Event::*;
         match stacked.event {
-            Release(x, y) => {
+            Release(i, j) => {
                 self.states = self
                     .states
                     .iter()
-                    .filter_map(|s| s.release((x, y)))
+                    .filter_map(|s| s.release((i, j)))
                     .collect()
             }
-            Press(x, y) => {
-                let action = self.press_as_action((x, y), self.current_layer());
-                self.do_action(action, (x, y), stacked.since);
+            Press(i, j) => {
+                let action = self.press_as_action((i, j), self.current_layer());
+                self.do_action(action, (i, j), stacked.since);
             }
         }
     }
@@ -172,13 +186,13 @@ impl Layout {
         }
         self.keycodes()
     }
-    fn press_as_action(&self, coord: (usize, usize), layer: usize) -> &'static Action {
+    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action {
         use crate::action::Action::*;
         let action = self
             .layers
             .get(layer)
-            .and_then(|l| l.get(coord.0))
-            .and_then(|l| l.get(coord.1));
+            .and_then(|l| l.get(coord.0 as usize))
+            .and_then(|l| l.get(coord.1 as usize));
         match action {
             None => &NoOp,
             Some(Trans) => {
@@ -191,7 +205,7 @@ impl Layout {
             Some(action) => action,
         }
     }
-    fn do_action(&mut self, action: &Action, coord: (usize, usize), delay: u16) {
+    fn do_action(&mut self, action: &Action, coord: (u8, u8), delay: u16) {
         assert!(self.waiting.is_none());
         use Action::*;
         match *action {
