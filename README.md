@@ -24,7 +24,8 @@ board based on a STM32F103 MCU.
 
 There is a [port](https://github.com/TeXitoi/ortho60-keyberon) to
 [Cannon Keys](https://cannonkeys.com/)'s [Ortho60 keyboard
-kit](https://cannonkeys.com/collections/frontpage/products/ortho60).
+kit](https://cannonkeys.com/collections/frontpage/products/ortho60)
+(blue pill based).
 
 Another handwired project using keyberon is
 [keyberon-f4](https://github.com/TeXitoi/keyberon-f4), a unsplitted
@@ -34,19 +35,22 @@ STM32F401 MCU.
 
 ![keyberon-f4](https://raw.githubusercontent.com/TeXitoi/keyberon-f4/master/images/keyberon-56.jpg)
 
-[TssT16](https://github.com/TssT16)'s 4x12 keyboard:
+[TssT16](https://github.com/TssT16)'s 4x12 keyboard (blue pill based):
 
 ![TssT16's](https://user-images.githubusercontent.com/12481562/81586297-97996e80-93b5-11ea-86e1-c4358854477e.jpg)
 
-[gilescope](https://github.com/gilescope)'s 4x12 keyboard:
+[gilescope](https://github.com/gilescope)'s 4x12 keyboard (keyberon
+grid, blue pill based):
 
 ![gilescope's](https://i.redd.it/syvlwmkd77851.jpg)
 
-[covah901](https://www.reddit.com/user/covah901/)'s keyboard:
+[covah901](https://www.reddit.com/user/covah901/)'s keyboard ([WeAct
+MiniF4](https://github.com/WeActTC/MiniF4-STM32F4x1) based):
 
 ![covah901](https://i.redd.it/gnkfymu0gwo41.jpg)
 
-KeySeeBee, a split ergo keyboard.
+[KeySeeBee](https://github.com/TeXitoi/keyseebee), a split ergo
+keyboard (STM32F072 based).
 
 ![KeySeeBee](https://raw.githubusercontent.com/TeXitoi/keyseebee/master/images/keyseebee.jpg)
 
