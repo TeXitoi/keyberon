@@ -27,6 +27,8 @@ There is a [port](https://github.com/TeXitoi/ortho60-keyberon) to
 kit](https://cannonkeys.com/collections/frontpage/products/ortho60)
 (blue pill based).
 
+![Ortho60](https://cdn.shopify.com/s/files/1/0238/7342/1376/products/Ortho60_1024x1024@2x.jpg)
+
 Another handwired project using keyberon is
 [keyberon-f4](https://github.com/TeXitoi/keyberon-f4), a unsplitted
 ergo keyboard. It runs on a [WeAct
