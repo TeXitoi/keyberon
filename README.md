@@ -34,9 +34,6 @@ STM32F401 MCU.
 
 ![keyberon-f4](https://raw.githubusercontent.com/TeXitoi/keyberon-f4/master/images/keyberon-56.jpg)
 
-There is also some independant projects that use keyberon. Feel free
-to open a PR with your build is you use keyberon!
-
 [TssT16](https://github.com/TssT16)'s 4x12 keyboard:
 
 ![TssT16's](https://user-images.githubusercontent.com/12481562/81586297-97996e80-93b5-11ea-86e1-c4358854477e.jpg)
@@ -48,6 +45,10 @@ to open a PR with your build is you use keyberon!
 [covah901](https://www.reddit.com/user/covah901/)'s keyboard:
 
 ![covah901](https://i.redd.it/gnkfymu0gwo41.jpg)
+
+KeySeeBee, a split ergo keyboard.
+
+![KeySeeBee](https://raw.githubusercontent.com/TeXitoi/keyseebee/master/images/keyseebee.jpg)
 
 ## Features
 
