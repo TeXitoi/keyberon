@@ -16,6 +16,8 @@ pub enum Action {
     /// these keys at the same time.  Useful to send shifted key, or
     /// complex short cuts as Ctrl+Alt+Del in a single key press.
     MultipleKeyCodes(&'static [KeyCode]),
+    /// Multiple actions send at the same time.
+    MultipleActions(&'static [Action]),
     /// While pressed, change the current layer. That's the classical
     /// Fn key. If several layer actions are active at the same time,
     /// their number are summed. For example, if you press at the same

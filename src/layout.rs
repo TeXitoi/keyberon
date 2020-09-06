@@ -273,6 +273,11 @@ impl Layout {
                     let _ = self.states.push(NormalKey { coord, keycode });
                 }
             }
+            MultipleActions(v) => {
+                for action in v {
+                    self.do_action(action, coord, delay);
+                }
+            }
             Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
             }
@@ -306,6 +311,7 @@ mod test {
     use crate::key_code::KeyCode::*;
     use std::collections::BTreeSet;
 
+    //#[track_caller]
     fn assert_keys(expected: &[KeyCode], iter: impl Iterator<Item = KeyCode>) {
         let expected: BTreeSet<_> = expected.iter().copied().collect();
         let tested = iter.collect();
@@ -343,6 +349,24 @@ mod test {
         assert_keys(&[LCtrl, Space], layout.tick());
         assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[LCtrl], layout.event(Release(0, 1)));
+        assert_keys(&[], layout.tick());
+    }
+
+    #[test]
+    fn multiple_actions() {
+        static LAYERS: Layers = &[
+            &[&[MultipleActions(&[l(1), k(LShift)]), k(F)]],
+            &[&[Trans, k(E)]],
+        ];
+        let mut layout = Layout::new(LAYERS);
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Press(0, 0)));
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift], layout.event(Press(0, 1)));
+        assert_keys(&[LShift, E], layout.tick());
+        assert_keys(&[LShift, E], layout.event(Release(0, 1)));
+        assert_keys(&[LShift, E], layout.event(Release(0, 0)));
+        assert_keys(&[LShift], layout.tick());
         assert_keys(&[], layout.tick());
     }
 }
