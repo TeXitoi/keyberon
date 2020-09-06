@@ -1,4 +1,4 @@
-# Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon)
+# Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon) [![](https://img.shields.io/crates/v/keyberon.svg)](https://crates.io/crates/keyberon) [![](https://docs.rs/keyberon/badge.svg)](https://docs.rs/keyberon)
 
 A rust crate to create a pure rust keyboard firmware.
 
