@@ -1,11 +1,21 @@
+//! Keyboard HID device implementation.
+
 use crate::hid::{HidDevice, Protocol, ReportType, Subclass};
 use crate::key_code::KbHidReport;
 
+/// A trait to manage keyboard LEDs.
+///
+/// `()` implements this trait if you don't care of LEDs.
 pub trait Leds {
+    /// Sets the num lock state.
     fn num_lock(&mut self, _status: bool) {}
+    /// Sets the caps lock state.
     fn caps_lock(&mut self, _status: bool) {}
+    /// Sets the scroll lock state.
     fn scroll_lock(&mut self, _status: bool) {}
+    /// Sets the compose state.
     fn compose(&mut self, _status: bool) {}
+    /// Sets the kana state.
     fn kana(&mut self, _status: bool) {}
 }
 impl Leds for () {}
@@ -18,17 +28,21 @@ const REPORT_DESCRIPTOR: &[u8] = &[
     0x75, 0x08, 0x95, 0x40, 0xB1, 0x02, 0xC0,
 ];
 
+/// A keyboard HID device.
 pub struct Keyboard<L> {
     report: KbHidReport,
     leds: L,
 }
+
 impl<L> Keyboard<L> {
+    /// Creates a new `Keyboard` object.
     pub fn new(leds: L) -> Keyboard<L> {
         Keyboard {
             report: KbHidReport::default(),
             leds,
         }
     }
+    /// Set the current keyboard HID report.  Returns `true` if it is modified.
     pub fn set_keyboard_report(&mut self, report: KbHidReport) -> bool {
         if report == self.report {
             false

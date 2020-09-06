@@ -1,3 +1,5 @@
+//! Layout management.
+
 use crate::action::Action;
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
@@ -6,8 +8,15 @@ use heapless::Vec;
 
 use State::*;
 
+/// The Layers type.
+///
+/// The first level correspond to the layer, the two others to the
+/// switch matrix.  For example, `layers[1][2][3]` correspond to the
+/// key i=2, j=3 on the layer 1.
 pub type Layers = &'static [&'static [&'static [Action]]];
 
+/// The layout manager. It takes `Event`s and `tick`s as input, and
+/// generate keyboard reports.
 pub struct Layout {
     layers: Layers,
     default_layer: usize,
@@ -16,18 +25,34 @@ pub struct Layout {
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
 }
 
-#[derive(Debug, Copy, Clone)]
+/// An event on the key matrix.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Event {
+    /// Press event with coordinates (i, j).
     Press(u8, u8),
+    /// Release event with coordinates (i, j).
     Release(u8, u8),
 }
 impl Event {
+    /// Returns the coordinates (i, j) of the event.
     pub fn coord(self) -> (u8, u8) {
         match self {
             Event::Press(i, j) => (i, j),
             Event::Release(i, j) => (i, j),
         }
     }
+
+    /// Transforms the coordinates of the event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use keyberon::layout::Event;
+    /// assert_eq!(
+    ///     Event::Press(3, 10),
+    ///     Event::Press(3, 1).transform(|i, j| (i, 11 - j)),
+    /// );
+    /// ```
     pub fn transform(self, f: impl FnOnce(u8, u8) -> (u8, u8)) -> Self {
         match self {
             Event::Press(i, j) => {
@@ -110,6 +135,7 @@ impl Stacked {
 }
 
 impl Layout {
+    /// Creates a new `Layout` object.
     pub fn new(layers: Layers) -> Self {
         Self {
             layers,
@@ -119,6 +145,7 @@ impl Layout {
             stacked: ArrayDeque::new(),
         }
     }
+    /// Iterates on the key codes of the current state.
     pub fn keycodes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
         self.states.iter().filter_map(State::keycode)
     }
@@ -138,6 +165,11 @@ impl Layout {
             self.do_action(tap, coord, 0);
         }
     }
+    /// A time event.
+    ///
+    /// This method must be called regularly, typically every millisecond.
+    ///
+    /// Returns an iterator on the current key code state.
     pub fn tick<'a>(&'a mut self) -> impl Iterator<Item = KeyCode> + 'a {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
@@ -171,6 +203,9 @@ impl Layout {
             }
         }
     }
+    /// A key event.
+    ///
+    /// Returns an iterator on the current key code state.
     pub fn event<'a>(&'a mut self, event: Event) -> impl Iterator<Item = KeyCode> + 'a {
         if let Some(stacked) = self.stacked.push_back(event.into()) {
             self.waiting_into_hold();

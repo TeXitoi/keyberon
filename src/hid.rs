@@ -1,6 +1,8 @@
 // Copyright 2019 Robin Krahl <robin.krahl@ireas.org>, Guillaume Pinot <texitoi@texitoi.eu>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(missing_docs)]
+
 use usb_device::bus::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
 use usb_device::class::{ControlIn, ControlOut, UsbClass};
 use usb_device::control;

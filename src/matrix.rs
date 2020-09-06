@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use generic_array::{ArrayLength, GenericArray};
 use heapless::Vec;
@@ -6,6 +8,7 @@ pub trait HeterogenousArray {
     type Len;
 }
 
+/// Macro to implement a iterator on trait objects from a tuple struct.
 #[macro_export]
 macro_rules! impl_heterogenous_array {
     ($s:ident, $t:ty, $len:tt, [$($idx:tt),+]) => {

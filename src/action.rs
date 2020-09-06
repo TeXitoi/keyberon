@@ -1,7 +1,5 @@
 //! The different actions that can be done.
 
-#![deny(missing_docs)]
-
 use crate::key_code::KeyCode;
 
 /// The different actions that can be done.

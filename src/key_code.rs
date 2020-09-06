@@ -1,3 +1,6 @@
+//! Key code definitions.
+
+#[allow(missing_docs)]
 /// Define a key code according to the HID specification.  Their names
 /// correspond to the american QWERTY layout.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -253,10 +256,16 @@ pub enum KeyCode {
     MediaRefresh,
     MediaCalc, // 0xFB
 }
+
 impl KeyCode {
+    /// Returns `true` if the key code correspond to a modifier (send
+    /// separately on USB HID report).
     pub fn is_modifier(self) -> bool {
         KeyCode::LCtrl <= self && self <= KeyCode::RGui
     }
+
+    /// Returns the byte with the bit corresponding to the USB HID
+    /// modifier bitfield setted.
     pub fn as_modifier_bit(self) -> u8 {
         if self.is_modifier() {
             1 << (self as u8 - KeyCode::LCtrl as u8)
@@ -266,6 +275,9 @@ impl KeyCode {
     }
 }
 
+/// A standard keyboard USB HID report.
+///
+/// It can handle any modifier and 6 keys.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct KbHidReport([u8; 8]);
 
@@ -283,9 +295,13 @@ impl core::iter::FromIterator<KeyCode> for KbHidReport {
 }
 
 impl KbHidReport {
+    /// Returns the byte slice corresponding to the report.
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
+
+    /// Add the given key code to the report. If the report is full,
+    /// it will be setted to `ErrorRollOver`.
     pub fn pressed(&mut self, kc: KeyCode) {
         use KeyCode::*;
         match kc {
