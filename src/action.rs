@@ -3,6 +3,7 @@
 use crate::key_code::KeyCode;
 
 /// The different actions that can be done.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action {
     /// No operation action: just do nothing.
