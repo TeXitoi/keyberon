@@ -3,6 +3,13 @@ name = "keyberon"
 version = "0.1.0"
 authors = ["Guillaume Pinot <texitoi@texitoi.eu>", "Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
+description = "Parse command line argument by defining a struct."
+documentation = "https://docs.rs/keyberon"
+repository = "https://github.com/TeXitoi/keyberon"
+keywords = ["keyboard", "usb-device", "firmware"]
+categories = ["embedded", "no-std"]
+license = "MIT"
+readme = "README.md"
 
 [dependencies]
 either = { version = "1.5", default-features = false }
