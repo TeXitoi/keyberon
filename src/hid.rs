@@ -218,7 +218,10 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
             (RequestType::Standard, Recipient::Interface) => {
                 if req.request == control::Request::GET_DESCRIPTOR {
                     let (dtype, index) = req.descriptor_type_index();
-                    if dtype == DescriptorType::Report as u8 && index == 0 && req.index == self.interface_index() {
+                    if dtype == DescriptorType::Report as u8
+                        && index == 0
+                        && req.index == self.interface_index()
+                    {
                         let descriptor = self.device.report_descriptor();
                         xfer.accept_with(descriptor).ok();
                     }
