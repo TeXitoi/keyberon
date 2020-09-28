@@ -150,6 +150,11 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
             Err(()) => xfer.reject().ok(),
         };
     }
+
+    fn interface_index(&self) -> u16 {
+        let iface: u8 = self.interface.into();
+        iface as u16
+    }
 }
 
 impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
@@ -213,7 +218,10 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
             (RequestType::Standard, Recipient::Interface) => {
                 if req.request == control::Request::GET_DESCRIPTOR {
                     let (dtype, index) = req.descriptor_type_index();
-                    if dtype == DescriptorType::Report as u8 && index == 0 {
+                    if dtype == DescriptorType::Report as u8
+                        && index == 0
+                        && req.index == self.interface_index()
+                    {
                         let descriptor = self.device.report_descriptor();
                         xfer.accept_with(descriptor).ok();
                     }
@@ -221,7 +229,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
             }
             (RequestType::Class, Recipient::Interface) => {
                 if let Some(request) = Request::new(req.request) {
-                    if request == Request::GetReport {
+                    if request == Request::GetReport && req.index == self.interface_index() {
                         self.get_report(xfer);
                     }
                 }
@@ -234,7 +242,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
         let req = xfer.request();
         if req.request_type == RequestType::Class && req.recipient == Recipient::Interface {
             if let Some(request) = Request::new(req.request) {
-                if request == Request::SetReport {
+                if request == Request::SetReport && req.index == self.interface_index() {
                     self.set_report(xfer);
                 }
             }
