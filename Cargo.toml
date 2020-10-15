@@ -3,7 +3,7 @@ name = "keyberon"
 version = "0.1.1"
 authors = ["Guillaume Pinot <texitoi@texitoi.eu>", "Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
-description = "Parse command line argument by defining a struct."
+description = "Pure Rust keyboard firmware."
 documentation = "https://docs.rs/keyberon"
 repository = "https://github.com/TeXitoi/keyberon"
 keywords = ["keyboard", "usb-device", "firmware"]
@@ -12,7 +12,7 @@ license = "MIT"
 readme = "README.md"
 
 [dependencies]
-either = { version = "1.5", default-features = false }
+either = { version = "1.6", default-features = false }
 generic-array = "0.13"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 usb-device = "0.2.0"
