@@ -1,6 +1,6 @@
 //! Layout management.
 
-use crate::action::Action;
+use crate::action::{Action, SequenceEvent};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::consts::U64;
@@ -32,6 +32,10 @@ pub enum Event {
     Press(u8, u8),
     /// Release event with coordinates (i, j).
     Release(u8, u8),
+    /// Press event with just a keycode (for sequences)
+    SequencePress(KeyCode),
+    /// Release event with just a keycode (for sequences)
+    SequenceRelease(KeyCode),
 }
 impl Event {
     /// Returns the coordinates (i, j) of the event.
@@ -39,6 +43,7 @@ impl Event {
         match self {
             Event::Press(i, j) => (i, j),
             Event::Release(i, j) => (i, j),
+            _ => (0, 0), // Need a NaN version of this or something
         }
     }
 
@@ -63,6 +68,13 @@ impl Event {
                 let (i, j) = f(i, j);
                 Event::Release(i, j)
             }
+            // Not really sure what (if anything) this needs to be.  Just returning as-is
+            Event::SequencePress(k) => {
+                Event::SequencePress(k)
+            }
+            Event::SequenceRelease(k) => {
+                Event::SequenceRelease(k)
+            }
         }
     }
 }
@@ -71,11 +83,13 @@ impl Event {
 enum State {
     NormalKey { keycode: KeyCode, coord: (u8, u8) },
     LayerModifier { value: usize, coord: (u8, u8) },
+    SequenceKey { keycode: KeyCode },
 }
 impl State {
     fn keycode(&self) -> Option<KeyCode> {
         match self {
             NormalKey { keycode, .. } => Some(*keycode),
+            SequenceKey { keycode } => Some(*keycode),
             _ => None,
         }
     }
@@ -87,6 +101,12 @@ impl State {
     fn release(&self, c: (u8, u8)) -> Option<Self> {
         match *self {
             NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == c => None,
+            _ => Some(*self),
+        }
+    }
+    fn seq_release(&self, k: KeyCode) -> Option<Self> {
+        match *self {
+            SequenceKey { keycode, .. } if keycode == k => None,
             _ => Some(*self),
         }
     }
@@ -201,6 +221,16 @@ impl Layout {
                 let action = self.press_as_action((i, j), self.current_layer());
                 self.do_action(action, (i, j), stacked.since);
             }
+            SequenceRelease(k) => {
+                self.states = self
+                    .states
+                    .iter()
+                    .filter_map(|s| s.seq_release(k))
+                    .collect()
+            }
+            SequencePress(k) => {
+                let _ = self.states.push(SequenceKey { keycode: k });
+            }
         }
     }
     /// A key event.
@@ -276,6 +306,36 @@ impl Layout {
             MultipleActions(v) => {
                 for action in v {
                     self.do_action(action, coord, delay);
+                }
+            }
+            Sequence { delay, actions } => {
+                for key_event in actions {
+                    match *key_event {
+                        SequenceEvent::Press(keycode) => {
+                            self.stacked.push_back(Event::SequencePress(keycode).into());
+                        }
+                        SequenceEvent::Release(keycode) => {
+                            self.stacked.push_back(Event::SequenceRelease(keycode).into());
+                        }
+                        SequenceEvent::Tap(keycode) => {
+                            self.stacked.push_back(Event::SequencePress(keycode).into());
+                            self.stacked.push_back(Event::SequenceRelease(keycode).into());
+                        }
+                        SequenceEvent::ReleaseAll() => {
+                            // Can't figure out a good way to handle iterating over self.stacked
+                            // ...without running into borrow checker problems.
+                            // I basically don't know what I'm doing (yet) hehe
+                            // TODO:
+                            // for s in self.stacked.into_iter().collect() {
+                            //     match s.event {
+                            //         Event::SequencePress(keycode) => {
+                            //             self.stacked.push_back(Event::SequenceRelease(keycode.clone()).into());
+                            //         }
+                            //         _ => { () }
+                            //     }
+                            // }
+                        }
+                    }
                 }
             }
             Layer(value) => {

@@ -1,6 +1,20 @@
-//! The different actions that can be done.
+//! The different actions that can be executed via any given key.
 
 use crate::key_code::KeyCode;
+
+/// The different types of actions we support for key macros
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum SequenceEvent {
+    /// A keypress/keydown
+    Press(KeyCode),
+    /// Key release/keyup
+    Release(KeyCode),
+    /// Combination quick keydown followed by keyrelease
+    Tap(KeyCode),
+    /// Release all (currently) pressed keys
+    ReleaseAll(),
+}
 
 /// The different actions that can be done.
 #[non_exhaustive]
@@ -41,6 +55,13 @@ pub enum Action {
         /// The tap action.
         tap: &'static Action,
     },
+    /// A sequence of KeyEvents
+    Sequence {
+        /// How long to delay between events
+        delay: u16, // NOTE: Currently unused
+        /// The sequence of KeyEvents that will be triggered
+        actions: &'static [SequenceEvent],
+    },
 }
 impl Action {
     /// Gets the layer number if the action is the `Layer` action.
@@ -55,6 +76,7 @@ impl Action {
         match self {
             Action::KeyCode(kc) => core::slice::from_ref(kc).iter().cloned(),
             Action::MultipleKeyCodes(kcs) => kcs.iter().cloned(),
+            // Action::Sequence { delay, actions } => actions.iter().cloned(), // TODO (maybe unnecessary)
             _ => [].iter().cloned(),
         }
     }
@@ -78,8 +100,33 @@ pub const fn d(layer: usize) -> Action {
     Action::DefaultLayer(layer)
 }
 
-/// A shortcut to create a `Action::KeyCode`, useful to create compact
+/// A shortcut to create `Action::MultipleKeyCodes`, useful to create compact
 /// layout.
 pub const fn m(kcs: &'static [KeyCode]) -> Action {
     Action::MultipleKeyCodes(kcs)
+}
+
+/// A shortcut to create `KeyEvent::Tap`, useful to create compact
+/// layout.
+pub const fn tap(kc: KeyCode) -> SequenceEvent {
+    SequenceEvent::Tap(kc)
+}
+
+/// A shortcut to create `KeyEvent::Press`, useful to create compact
+/// layout.
+pub const fn kp(kc: KeyCode) -> SequenceEvent {
+    SequenceEvent::Press(kc)
+}
+
+/// A shortcut to create `KeyEvent::Release`, useful to create compact
+/// layout.
+pub const fn kr(kc: KeyCode) -> SequenceEvent {
+    SequenceEvent::Release(kc)
+}
+
+// NOTE: This doesn't work yet:
+/// A shortcut to create `KeyEvent::Release`, useful to create compact
+/// layout.
+pub const fn ra() -> SequenceEvent {
+    SequenceEvent::ReleaseAll()
 }
