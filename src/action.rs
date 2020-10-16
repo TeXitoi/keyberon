@@ -1,8 +1,30 @@
-//! The different actions that can be done.
+//! The different actions that can be executed via any given key.
 
 use crate::key_code::KeyCode;
 use crate::layout::{StackedIter, WaitingAction};
 use core::fmt::Debug;
+
+/// The different types of actions we support for key sequences/macros
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum SequenceEvent<K> {
+    /// No operation action: just do nothing (a placeholder).
+    NoOp,
+    /// A keypress/keydown
+    Press(K),
+    /// Key release/keyup
+    Release(K),
+    /// A shortcut for `Press(K), Release(K)`
+    Tap(K),
+    /// For sequences that need to wait a bit before continuing
+    Delay {
+        /// How long (in ticks) this Delay will last
+        duration: u32, // NOTE: This isn't a u16 because that's only max ~65 seconds (assuming 1000 ticks/sec)
+    },
+    /// Cancels the running sequence and can be used to mark the end of a sequence
+    /// instead of using a number of Release() events
+    Complete,
+}
 
 /// Behavior configuration of HoldTap.
 #[non_exhaustive]
@@ -197,6 +219,13 @@ where
     DefaultLayer(usize),
     /// Perform different actions on key hold/tap (see [`HoldTapAction`]).
     HoldTap(&'static HoldTapAction<T, K>),
+    /// A sequence of SequenceEvents
+    Sequence {
+        /// An array of SequenceEvents that will be triggered (in order)
+        events: &'static [SequenceEvent<K>],
+    },
+    /// Cancels any running sequences
+    CancelSequences,
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you
