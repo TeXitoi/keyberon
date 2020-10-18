@@ -25,6 +25,7 @@ pub mod key_code;
 pub mod keyboard;
 pub mod layout;
 pub mod matrix;
+pub mod combo;
 
 /// A handly shortcut for the keyberon USB class type.
 pub type Class<'a, B, L> = hid::HidClass<'a, B, keyboard::Keyboard<L>>;
