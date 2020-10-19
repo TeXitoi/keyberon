@@ -23,6 +23,9 @@ pub struct Layout {
     states: Vec<State, U64>,
     waiting: Option<WaitingState>,
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
+    sequenced: ArrayDeque<[SequenceEvent; 32], arraydeque::behavior::Wrapping>,
+    // Riskable NOTE: Wish we didn't have to preallocate sequenced like this.
+    //       I want to be able to have my keyboard type long sentences/quotes!
 }
 
 /// An event on the key matrix.
@@ -32,10 +35,6 @@ pub enum Event {
     Press(u8, u8),
     /// Release event with coordinates (i, j).
     Release(u8, u8),
-    /// Press event with just a keycode (for sequences)
-    SequencePress(KeyCode),
-    /// Release event with just a keycode (for sequences)
-    SequenceRelease(KeyCode),
 }
 impl Event {
     /// Returns the coordinates (i, j) of the event.
@@ -43,7 +42,6 @@ impl Event {
         match self {
             Event::Press(i, j) => (i, j),
             Event::Release(i, j) => (i, j),
-            _ => (0, 0), // Need a NaN version of this or something
         }
     }
 
@@ -68,28 +66,38 @@ impl Event {
                 let (i, j) = f(i, j);
                 Event::Release(i, j)
             }
-            // Not really sure what (if anything) this needs to be.  Just returning as-is
-            Event::SequencePress(k) => {
-                Event::SequencePress(k)
-            }
-            Event::SequenceRelease(k) => {
-                Event::SequenceRelease(k)
-            }
         }
     }
 }
 
+/// The various states used internally by Keyberon
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum State {
-    NormalKey { keycode: KeyCode, coord: (u8, u8) },
-    LayerModifier { value: usize, coord: (u8, u8) },
-    SequenceKey { keycode: KeyCode },
+    /// Normal keys
+    NormalKey {
+        /// Keycode
+        keycode: KeyCode,
+        /// Coordinates in the matrix
+        coord: (u8, u8),
+    },
+    /// Layer modifier keys
+    LayerModifier {
+        /// Value
+        value: usize,
+        /// Coordinates of this layer modifier key in the matrix
+        coord: (u8, u8),
+    },
+    /// Fake key event for sequences
+    FakeKey {
+        /// The key to everything!
+        keycode: KeyCode,
+    },
 }
 impl State {
     fn keycode(&self) -> Option<KeyCode> {
         match self {
             NormalKey { keycode, .. } => Some(*keycode),
-            SequenceKey { keycode } => Some(*keycode),
+            FakeKey { keycode } => Some(*keycode),
             _ => None,
         }
     }
@@ -104,9 +112,9 @@ impl State {
             _ => Some(*self),
         }
     }
-    fn seq_release(&self, k: KeyCode) -> Option<Self> {
+    fn seq_release(&self, kc: KeyCode) -> Option<Self> {
         match *self {
-            SequenceKey { keycode, .. } if keycode == k => None,
+            FakeKey { keycode, .. } if keycode == kc => None,
             _ => Some(*self),
         }
     }
@@ -163,6 +171,7 @@ impl Layout {
             states: Vec::new(),
             waiting: None,
             stacked: ArrayDeque::new(),
+            sequenced: ArrayDeque::new(),
         }
     }
     /// Iterates on the key codes of the current state.
@@ -205,6 +214,32 @@ impl Layout {
                 }
             }
         }
+        // Process sequences
+        if let Some(event) = self.sequenced.pop_front() {
+            match event {
+                SequenceEvent::Press(keycode) => {
+                    // Start tracking this fake key Press() event
+                    let _ = self.states.push(FakeKey { keycode: keycode });
+                }
+                SequenceEvent::Release(keycode) => {
+                    // Clear out the Press() matching this Release's keycode
+                    self.states = self
+                        .states
+                        .iter()
+                        .filter_map(|s| s.seq_release(keycode))
+                        .collect()
+                }
+                SequenceEvent::Delay { since, ticks } => {
+                    if since < ticks {
+                        // Increment and put it back
+                        self.sequenced.push_front(SequenceEvent::Delay {
+                            since: since.saturating_add(1),
+                            ticks: ticks,
+                        });
+                    }
+                }
+            }
+        }
         self.keycodes()
     }
     fn unstack(&mut self, stacked: Stacked) {
@@ -220,16 +255,6 @@ impl Layout {
             Press(i, j) => {
                 let action = self.press_as_action((i, j), self.current_layer());
                 self.do_action(action, (i, j), stacked.since);
-            }
-            SequenceRelease(k) => {
-                self.states = self
-                    .states
-                    .iter()
-                    .filter_map(|s| s.seq_release(k))
-                    .collect()
-            }
-            SequencePress(k) => {
-                let _ = self.states.push(SequenceKey { keycode: k });
             }
         }
     }
@@ -308,32 +333,21 @@ impl Layout {
                     self.do_action(action, coord, delay);
                 }
             }
-            Sequence { delay, actions } => {
-                for key_event in actions {
+            Sequence { events } => {
+                // Copy the contents of the sequence events into the sequenced ArrayDeque
+                for key_event in events {
                     match *key_event {
                         SequenceEvent::Press(keycode) => {
-                            self.stacked.push_back(Event::SequencePress(keycode).into());
+                            self.sequenced.push_back(SequenceEvent::Press(keycode));
                         }
                         SequenceEvent::Release(keycode) => {
-                            self.stacked.push_back(Event::SequenceRelease(keycode).into());
+                            self.sequenced.push_back(SequenceEvent::Release(keycode));
                         }
-                        SequenceEvent::Tap(keycode) => {
-                            self.stacked.push_back(Event::SequencePress(keycode).into());
-                            self.stacked.push_back(Event::SequenceRelease(keycode).into());
-                        }
-                        SequenceEvent::ReleaseAll() => {
-                            // Can't figure out a good way to handle iterating over self.stacked
-                            // ...without running into borrow checker problems.
-                            // I basically don't know what I'm doing (yet) hehe
-                            // TODO:
-                            // for s in self.stacked.into_iter().collect() {
-                            //     match s.event {
-                            //         Event::SequencePress(keycode) => {
-                            //             self.stacked.push_back(Event::SequenceRelease(keycode.clone()).into());
-                            //         }
-                            //         _ => { () }
-                            //     }
-                            // }
+                        SequenceEvent::Delay { since, ticks } => {
+                            self.sequenced.push_back(SequenceEvent::Delay {
+                                since: since,
+                                ticks: ticks,
+                            });
                         }
                     }
                 }

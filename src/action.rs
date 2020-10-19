@@ -3,17 +3,31 @@
 use crate::key_code::KeyCode;
 
 /// The different types of actions we support for key macros
-#[non_exhaustive]
+#[non_exhaustive] // Definitely NOT exhaustive!  Let's add more! Mouse events maybe? :)
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum SequenceEvent {
     /// A keypress/keydown
     Press(KeyCode),
     /// Key release/keyup
     Release(KeyCode),
-    /// Combination quick keydown followed by keyrelease
-    Tap(KeyCode),
-    /// Release all (currently) pressed keys
-    ReleaseAll(),
+    /// For sequences that need to wait a bit before continuing
+    Delay {
+        /// A delay (in ticks) to wait before executing the next SequenceEvent
+        since: u32,
+        /// Number of ticks to wait before removing the Delay
+        ticks: u32,
+    },
+}
+
+impl SequenceEvent {
+    /// Returns the keycode associated with the given Press/Release event
+    pub fn keycode(&self) -> Option<KeyCode> {
+        match *self {
+            SequenceEvent::Press(keycode) => Some(keycode),
+            SequenceEvent::Release(keycode) => Some(keycode),
+            _ => None,
+        }
+    }
 }
 
 /// The different actions that can be done.
@@ -55,12 +69,10 @@ pub enum Action {
         /// The tap action.
         tap: &'static Action,
     },
-    /// A sequence of KeyEvents
+    /// A sequence of SequenceEvents
     Sequence {
-        /// How long to delay between events
-        delay: u16, // NOTE: Currently unused
-        /// The sequence of KeyEvents that will be triggered
-        actions: &'static [SequenceEvent],
+        /// An array of SequenceEvents that will be triggered (in order)
+        events: &'static [SequenceEvent],
     },
 }
 impl Action {
@@ -76,7 +88,6 @@ impl Action {
         match self {
             Action::KeyCode(kc) => core::slice::from_ref(kc).iter().cloned(),
             Action::MultipleKeyCodes(kcs) => kcs.iter().cloned(),
-            // Action::Sequence { delay, actions } => actions.iter().cloned(), // TODO (maybe unnecessary)
             _ => [].iter().cloned(),
         }
     }
@@ -106,27 +117,3 @@ pub const fn m(kcs: &'static [KeyCode]) -> Action {
     Action::MultipleKeyCodes(kcs)
 }
 
-/// A shortcut to create `KeyEvent::Tap`, useful to create compact
-/// layout.
-pub const fn tap(kc: KeyCode) -> SequenceEvent {
-    SequenceEvent::Tap(kc)
-}
-
-/// A shortcut to create `KeyEvent::Press`, useful to create compact
-/// layout.
-pub const fn kp(kc: KeyCode) -> SequenceEvent {
-    SequenceEvent::Press(kc)
-}
-
-/// A shortcut to create `KeyEvent::Release`, useful to create compact
-/// layout.
-pub const fn kr(kc: KeyCode) -> SequenceEvent {
-    SequenceEvent::Release(kc)
-}
-
-// NOTE: This doesn't work yet:
-/// A shortcut to create `KeyEvent::Release`, useful to create compact
-/// layout.
-pub const fn ra() -> SequenceEvent {
-    SequenceEvent::ReleaseAll()
-}
