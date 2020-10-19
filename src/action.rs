@@ -116,4 +116,3 @@ pub const fn d(layer: usize) -> Action {
 pub const fn m(kcs: &'static [KeyCode]) -> Action {
     Action::MultipleKeyCodes(kcs)
 }
-

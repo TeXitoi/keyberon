@@ -102,9 +102,7 @@ impl State {
         }
     }
     fn tick(&self) -> Option<Self> {
-        match *self {
-            _ => Some(*self),
-        }
+        Some(*self)
     }
     fn release(&self, c: (u8, u8)) -> Option<Self> {
         match *self {
@@ -139,10 +137,7 @@ impl WaitingState {
         self.timeout == 0
     }
     fn is_corresponding_release(&self, event: &Event) -> bool {
-        match event {
-            Event::Release(i, j) if (*i, *j) == self.coord => true,
-            _ => false,
-        }
+        matches!(event, Event::Release(i, j) if (*i, *j) == self.coord)
     }
 }
 
