@@ -219,7 +219,7 @@ impl Layout {
             match event {
                 SequenceEvent::Press(keycode) => {
                     // Start tracking this fake key Press() event
-                    let _ = self.states.push(FakeKey { keycode: keycode });
+                    let _ = self.states.push(FakeKey { keycode });
                 }
                 SequenceEvent::Release(keycode) => {
                     // Clear out the Press() matching this Release's keycode
@@ -234,7 +234,7 @@ impl Layout {
                         // Increment and put it back
                         self.sequenced.push_front(SequenceEvent::Delay {
                             since: since.saturating_add(1),
-                            ticks: ticks,
+                            ticks,
                         });
                     }
                 }
@@ -344,10 +344,8 @@ impl Layout {
                             self.sequenced.push_back(SequenceEvent::Release(keycode));
                         }
                         SequenceEvent::Delay { since, ticks } => {
-                            self.sequenced.push_back(SequenceEvent::Delay {
-                                since: since,
-                                ticks: ticks,
-                            });
+                            self.sequenced
+                                .push_back(SequenceEvent::Delay { since, ticks });
                         }
                     }
                 }
