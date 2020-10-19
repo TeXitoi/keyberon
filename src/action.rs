@@ -88,6 +88,7 @@ impl Action {
         match self {
             Action::KeyCode(kc) => core::slice::from_ref(kc).iter().cloned(),
             Action::MultipleKeyCodes(kcs) => kcs.iter().cloned(),
+            // Action::Sequence { delay, actions } => actions.iter().cloned(), // TODO (maybe unnecessary)
             _ => [].iter().cloned(),
         }
     }
