@@ -234,7 +234,7 @@ impl Layout {
                         // Increment and put it back
                         self.sequenced.push_front(SequenceEvent::Delay {
                             since: since.saturating_add(1),
-                            ticks,
+                            ticks: 1, // Count this tick as the first
                         });
                     }
                 }
@@ -378,6 +378,7 @@ mod test {
     extern crate std;
     use super::{Event::*, Layers, Layout};
     use crate::action::Action::*;
+    use crate::action::SequenceEvent;
     use crate::action::{k, l, m};
     use crate::key_code::KeyCode;
     use crate::key_code::KeyCode::*;
@@ -440,5 +441,44 @@ mod test {
         assert_keys(&[LShift, E], layout.event(Release(0, 0)));
         assert_keys(&[LShift], layout.tick());
         assert_keys(&[], layout.tick());
+    }
+
+    #[test]
+    fn sequences() {
+        static LAYERS: Layers = &[&[&[
+            Sequence {
+                // Simple Ctrl-C sequence/macro
+                events: &[
+                    SequenceEvent::Press(LCtrl),
+                    SequenceEvent::Press(C),
+                    SequenceEvent::Release(C),
+                    SequenceEvent::Release(LCtrl),
+                ],
+            },
+            Sequence {
+                // YO with a delay in the middle
+                events: &[
+                    SequenceEvent::Press(Y),
+                    SequenceEvent::Release(Y),
+                    // How many licks does it take to get to the center?
+                    SequenceEvent::Delay { since: 0, ticks: 3 }, // This many!
+                    SequenceEvent::Press(O),
+                    SequenceEvent::Release(O),
+                ],
+            },
+        ]]];
+        let mut layout = Layout::new(LAYERS);
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Press(0, 0)));
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[LCtrl, C], layout.tick());
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.event(Press(0, 1)));
+        assert_keys(&[Y], layout.tick());
+        assert_keys(&[], layout.tick()); // 1
+        assert_keys(&[], layout.tick()); // 2
+        assert_keys(&[], layout.tick()); // 3
+        assert_keys(&[O], layout.tick()); // CHOMP!
     }
 }
