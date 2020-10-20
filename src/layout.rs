@@ -247,7 +247,7 @@ impl Layout {
                         // Pass it around...
                         self.sequenced.push_back(SequenceEvent::Continue {
                             index: index + 1,
-                            events: events,
+                            events,
                         });
                         break; // Save some looping
                     }
@@ -381,7 +381,7 @@ impl Layout {
                 // Copy the first chunk of `SequenceEvent`s into the `sequenced` ArrayDeque
                 // ...we'll cover the remaining chunks as we drain them from `sequenced`
                 let chunk_length = self.sequenced.capacity() - 1; // -1: Keep a slot for Continue()
-                for chunk in events.clone().chunks(chunk_length) {
+                for chunk in events.chunks(chunk_length) {
                     for key_event in chunk {
                         match *key_event {
                             SequenceEvent::Press(keycode) => {
@@ -400,7 +400,7 @@ impl Layout {
                     // Add a continuation
                     self.sequenced.push_back(SequenceEvent::Continue {
                         index: 0,
-                        events: events,
+                        events,
                     });
                     break; // Only need queue up the first chunk
                 }
