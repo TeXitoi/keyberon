@@ -381,7 +381,8 @@ impl Layout {
                 // Copy the first chunk of `SequenceEvent`s into the `sequenced` ArrayDeque
                 // ...we'll cover the remaining chunks as we drain them from `sequenced`
                 let chunk_length = self.sequenced.capacity() - 1; // -1: Keep a slot for Continue()
-                for chunk in events.chunks(chunk_length) {
+                if let Some(chunk) = events.chunks(chunk_length).next() {
+                    // if let Some(key_event) = events.chunks(chunk_length).next() {
                     for key_event in chunk {
                         match *key_event {
                             SequenceEvent::Press(keycode) => {
@@ -397,13 +398,10 @@ impl Layout {
                             _ => {} // Should never reach a continue here
                         }
                     }
-                    // Add a continuation
-                    self.sequenced.push_back(SequenceEvent::Continue {
-                        index: 0,
-                        events,
-                    });
-                    break; // Only need queue up the first chunk
                 }
+                // Add a continuation
+                self.sequenced
+                    .push_back(SequenceEvent::Continue { index: 0, events });
             }
             Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
@@ -578,51 +576,51 @@ mod test {
         // Test a sequence with a delay (aka The Mr Owl test)
         assert_keys(&[], layout.event(Press(0, 1)));
         assert_keys(&[Y], layout.tick());
-        assert_keys(&[], layout.tick());  // "Eh Ooone!"
-        assert_keys(&[], layout.tick());  // "Eh two!"
-        assert_keys(&[], layout.tick());  // "Eh three."
+        assert_keys(&[], layout.tick()); // "Eh Ooone!"
+        assert_keys(&[], layout.tick()); // "Eh two!"
+        assert_keys(&[], layout.tick()); // "Eh three."
         assert_keys(&[O], layout.tick()); // CHOMP!
         assert_keys(&[], layout.tick());
         // Test really long sequences (aka macros)...
         assert_keys(&[], layout.event(Press(0, 2)));
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,U], layout.tick());
+        assert_keys(&[LShift, U], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,N], layout.tick());
+        assert_keys(&[LShift, N], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,L], layout.tick());
+        assert_keys(&[LShift, L], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,I], layout.tick());
+        assert_keys(&[LShift, I], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,M], layout.tick());
+        assert_keys(&[LShift, M], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,I], layout.tick());
+        assert_keys(&[LShift, I], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,T], layout.tick());
+        assert_keys(&[LShift, T], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,E], layout.tick());
+        assert_keys(&[LShift, E], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,D], layout.tick());
+        assert_keys(&[LShift, D], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,Space], layout.tick());
+        assert_keys(&[LShift, Space], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,P], layout.tick());
+        assert_keys(&[LShift, P], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,O], layout.tick());
+        assert_keys(&[LShift, O], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,W], layout.tick());
+        assert_keys(&[LShift, W], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,E], layout.tick());
+        assert_keys(&[LShift, E], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,R], layout.tick());
+        assert_keys(&[LShift, R], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift, Kb1], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift, Kb1], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift, Kb1], layout.tick());
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift, Kb1], layout.tick());
         assert_keys(&[LShift], layout.tick());
         assert_keys(&[], layout.tick());
     }
