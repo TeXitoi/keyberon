@@ -24,8 +24,6 @@ pub struct Layout {
     waiting: Option<WaitingState>,
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
     sequenced: ArrayDeque<[SequenceEvent; 16], arraydeque::behavior::Wrapping>,
-    // Riskable NOTE: Wish we didn't have to preallocate sequenced like this.
-    //       I want to be able to have my keyboard type long sentences/quotes!
 }
 
 /// An event on the key matrix.
@@ -278,7 +276,7 @@ impl Layout {
                         // Increment and put it back
                         self.sequenced.push_front(SequenceEvent::Delay {
                             since: since.saturating_add(1),
-                            ticks: 1, // Count this tick as the first
+                            ticks,
                         });
                     }
                 }
@@ -382,7 +380,6 @@ impl Layout {
                 // ...we'll cover the remaining chunks as we drain them from `sequenced`
                 let chunk_length = self.sequenced.capacity() - 1; // -1: Keep a slot for Continue()
                 if let Some(chunk) = events.chunks(chunk_length).next() {
-                    // if let Some(key_event) = events.chunks(chunk_length).next() {
                     for key_event in chunk {
                         match *key_event {
                             SequenceEvent::Press(keycode) => {
@@ -391,17 +388,22 @@ impl Layout {
                             SequenceEvent::Release(keycode) => {
                                 self.sequenced.push_back(SequenceEvent::Release(keycode));
                             }
-                            SequenceEvent::Delay { since, ticks } => {
-                                self.sequenced
-                                    .push_back(SequenceEvent::Delay { since, ticks });
+                            SequenceEvent::Delay { ticks, .. } => {
+                                self.sequenced.push_back(SequenceEvent::Delay {
+                                    // Start at 2 so we don't have an extra tick:
+                                    since: 2,
+                                    ticks,
+                                });
                             }
                             _ => {} // Should never reach a continue here
                         }
                     }
                 }
-                // Add a continuation
-                self.sequenced
-                    .push_back(SequenceEvent::Continue { index: 0, events });
+                if events.len() >= chunk_length {
+                    // Add a continuation
+                    self.sequenced
+                        .push_back(SequenceEvent::Continue { index: 0, events });
+                }
             }
             Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
