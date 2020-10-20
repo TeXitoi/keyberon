@@ -17,6 +17,14 @@ pub enum SequenceEvent {
         /// Number of ticks to wait before removing the Delay
         ticks: u32,
     },
+    /// A marker that indicates there's more of the macro than would fit
+    /// in the 'sequenced' ArrayDeque
+    Continue {
+        /// The current chunk
+        index: usize,
+        /// The full list of Sequence Events (that aren't Continue())
+        events: &'static [SequenceEvent],
+    },
 }
 
 impl SequenceEvent {

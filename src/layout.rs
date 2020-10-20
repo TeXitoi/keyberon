@@ -23,7 +23,7 @@ pub struct Layout {
     states: Vec<State, U64>,
     waiting: Option<WaitingState>,
     stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
-    sequenced: ArrayDeque<[SequenceEvent; 32], arraydeque::behavior::Wrapping>,
+    sequenced: ArrayDeque<[SequenceEvent; 16], arraydeque::behavior::Wrapping>,
     // Riskable NOTE: Wish we didn't have to preallocate sequenced like this.
     //       I want to be able to have my keyboard type long sentences/quotes!
 }
@@ -209,7 +209,56 @@ impl Layout {
                 }
             }
         }
-        // Process sequences
+        self.process_sequences();
+        self.keycodes()
+    }
+    /// Takes care of draining and populating the `sequenced` ArrayDeque,
+    /// giving us sequences (aka macros) of nearly limitless length!
+    fn process_sequences(&mut self) {
+        // Take one down...
+        if let Some(event) = self.sequenced.pop_front() {
+            // Process Continue() events first so we can swap them out for the next
+            // regular SequenceEvent so we don't end up with skipped ticks (which
+            // messes up unit testing and makes Delay()s slightly inaccurate).
+            match event {
+                SequenceEvent::Continue { index, events } => {
+                    // Add the next chunk of sequenced events
+                    let chunk_length = self.sequenced.capacity() - 1; // -1: Keep a slot for Continue()
+                    let current_chunk = index + 1; // This is the one we want
+                    for (chunk_index, chunk) in events.chunks(chunk_length).enumerate() {
+                        if chunk_index != current_chunk {
+                            continue; // Skip to the chunk we want
+                        }
+                        for key_event in chunk {
+                            match *key_event {
+                                SequenceEvent::Press(keycode) => {
+                                    self.sequenced.push_back(SequenceEvent::Press(keycode));
+                                }
+                                SequenceEvent::Release(keycode) => {
+                                    self.sequenced.push_back(SequenceEvent::Release(keycode));
+                                }
+                                SequenceEvent::Delay { since, ticks } => {
+                                    self.sequenced
+                                        .push_back(SequenceEvent::Delay { since, ticks });
+                                }
+                                _ => {} // Would be a Continue() but we'll never encounter one here
+                            }
+                        }
+                        // Pass it around...
+                        self.sequenced.push_back(SequenceEvent::Continue {
+                            index: index + 1,
+                            events: events,
+                        });
+                        break; // Save some looping
+                    }
+                }
+                _ => {
+                    // If it's not a Continue() put it back and we'll process it below
+                    self.sequenced.push_front(event);
+                }
+            }
+        }
+        // 99 chunks of sequences on the wall!
         if let Some(event) = self.sequenced.pop_front() {
             match event {
                 SequenceEvent::Press(keycode) => {
@@ -233,9 +282,9 @@ impl Layout {
                         });
                     }
                 }
+                _ => {} // Would be a Continue() but we'll never encounter one here
             }
         }
-        self.keycodes()
     }
     fn unstack(&mut self, stacked: Stacked) {
         use Event::*;
@@ -329,20 +378,31 @@ impl Layout {
                 }
             }
             Sequence { events } => {
-                // Copy the contents of the sequence events into the sequenced ArrayDeque
-                for key_event in events {
-                    match *key_event {
-                        SequenceEvent::Press(keycode) => {
-                            self.sequenced.push_back(SequenceEvent::Press(keycode));
-                        }
-                        SequenceEvent::Release(keycode) => {
-                            self.sequenced.push_back(SequenceEvent::Release(keycode));
-                        }
-                        SequenceEvent::Delay { since, ticks } => {
-                            self.sequenced
-                                .push_back(SequenceEvent::Delay { since, ticks });
+                // Copy the first chunk of `SequenceEvent`s into the `sequenced` ArrayDeque
+                // ...we'll cover the remaining chunks as we drain them from `sequenced`
+                let chunk_length = self.sequenced.capacity() - 1; // -1: Keep a slot for Continue()
+                for chunk in events.clone().chunks(chunk_length) {
+                    for key_event in chunk {
+                        match *key_event {
+                            SequenceEvent::Press(keycode) => {
+                                self.sequenced.push_back(SequenceEvent::Press(keycode));
+                            }
+                            SequenceEvent::Release(keycode) => {
+                                self.sequenced.push_back(SequenceEvent::Release(keycode));
+                            }
+                            SequenceEvent::Delay { since, ticks } => {
+                                self.sequenced
+                                    .push_back(SequenceEvent::Delay { since, ticks });
+                            }
+                            _ => {} // Should never reach a continue here
                         }
                     }
+                    // Add a continuation
+                    self.sequenced.push_back(SequenceEvent::Continue {
+                        index: 0,
+                        events: events,
+                    });
+                    break; // Only need queue up the first chunk
                 }
             }
             Layer(value) => {
@@ -455,25 +515,115 @@ mod test {
                 events: &[
                     SequenceEvent::Press(Y),
                     SequenceEvent::Release(Y),
-                    // How many licks does it take to get to the center?
-                    SequenceEvent::Delay { since: 0, ticks: 3 }, // This many!
+                    // "How many licks does it take to get to the center?"
+                    SequenceEvent::Delay { since: 0, ticks: 3 }, // Let's find out
                     SequenceEvent::Press(O),
                     SequenceEvent::Release(O),
                 ],
             },
+            Sequence {
+                // A long sequence to test the chunking capability
+                events: &[
+                    SequenceEvent::Press(LShift), // Important: Shift must remain held
+                    SequenceEvent::Press(U),      // ...or the message just isn't the same!
+                    SequenceEvent::Release(U),
+                    SequenceEvent::Press(N),
+                    SequenceEvent::Release(N),
+                    SequenceEvent::Press(L),
+                    SequenceEvent::Release(L),
+                    SequenceEvent::Press(I),
+                    SequenceEvent::Release(I),
+                    SequenceEvent::Press(M),
+                    SequenceEvent::Release(M),
+                    SequenceEvent::Press(I),
+                    SequenceEvent::Release(I),
+                    SequenceEvent::Press(T),
+                    SequenceEvent::Release(T),
+                    SequenceEvent::Press(E),
+                    SequenceEvent::Release(E),
+                    SequenceEvent::Press(D),
+                    SequenceEvent::Release(D),
+                    SequenceEvent::Press(Space),
+                    SequenceEvent::Release(Space),
+                    SequenceEvent::Press(P),
+                    SequenceEvent::Release(P),
+                    SequenceEvent::Press(O),
+                    SequenceEvent::Release(O),
+                    SequenceEvent::Press(W),
+                    SequenceEvent::Release(W),
+                    SequenceEvent::Press(E),
+                    SequenceEvent::Release(E),
+                    SequenceEvent::Press(R),
+                    SequenceEvent::Release(R),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Release(LShift),
+                ],
+            },
         ]]];
         let mut layout = Layout::new(LAYERS);
+        // Test a basic sequence
         assert_keys(&[], layout.tick());
         assert_keys(&[], layout.event(Press(0, 0)));
         assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[LCtrl, C], layout.tick());
         assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[], layout.tick());
+        // Test a sequence with a delay (aka The Mr Owl test)
         assert_keys(&[], layout.event(Press(0, 1)));
         assert_keys(&[Y], layout.tick());
-        assert_keys(&[], layout.tick()); // 1
-        assert_keys(&[], layout.tick()); // 2
-        assert_keys(&[], layout.tick()); // 3
+        assert_keys(&[], layout.tick());  // "Eh Ooone!"
+        assert_keys(&[], layout.tick());  // "Eh two!"
+        assert_keys(&[], layout.tick());  // "Eh three."
         assert_keys(&[O], layout.tick()); // CHOMP!
+        assert_keys(&[], layout.tick());
+        // Test really long sequences (aka macros)...
+        assert_keys(&[], layout.event(Press(0, 2)));
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,U], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,N], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,L], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,I], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,M], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,I], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,T], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,E], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,D], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,Space], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,P], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,O], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,W], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,E], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,R], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[LShift,Kb1], layout.tick());
+        assert_keys(&[LShift], layout.tick());
+        assert_keys(&[], layout.tick());
     }
 }
