@@ -426,7 +426,20 @@ impl Layout {
                 }
             }
             CancelSequence => {
+                // Clear any and all running sequences then clean up any leftover FakeKey events
                 self.sequenced.clear();
+                for fake_key in self.states.clone().iter() {
+                    match *fake_key {
+                        FakeKey { keycode } => {
+                            self.states = self
+                                .states
+                                .iter()
+                                .filter_map(|s| s.seq_release(keycode))
+                                .collect();
+                        }
+                        _ => {}
+                    }
+                }
             }
             Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
