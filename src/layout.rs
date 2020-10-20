@@ -259,6 +259,23 @@ impl Layout {
         // 99 chunks of sequences on the wall!
         if let Some(event) = self.sequenced.pop_front() {
             match event {
+                SequenceEvent::Complete => {
+                    // Empty out any remaining SequenceEvents and whatever they added to self.states
+                    // let keycodes = self.sequenced.iter().filter_map(SequenceEvent::keycode);
+                    for fake_key in self.states.clone().iter() {
+                        match *fake_key {
+                            FakeKey { keycode } => {
+                                self.states = self
+                                    .states
+                                    .iter()
+                                    .filter_map(|s| s.seq_release(keycode))
+                                    .collect();
+                            }
+                            _ => {}
+                        }
+                    }
+                    self.sequenced.clear();
+                }
                 SequenceEvent::Press(keycode) => {
                     // Start tracking this fake key Press() event
                     let _ = self.states.push(FakeKey { keycode });
@@ -395,6 +412,9 @@ impl Layout {
                                     ticks,
                                 });
                             }
+                            SequenceEvent::Complete => {
+                                self.sequenced.push_back(SequenceEvent::Complete);
+                            }
                             _ => {} // Should never reach a continue here
                         }
                     }
@@ -404,6 +424,9 @@ impl Layout {
                     self.sequenced
                         .push_back(SequenceEvent::Continue { index: 0, events });
                 }
+            }
+            CancelSequence => {
+                self.sequenced.clear();
             }
             Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
@@ -511,6 +534,14 @@ mod test {
                 ],
             },
             Sequence {
+                // So we can test that Complete works
+                events: &[
+                    SequenceEvent::Press(LCtrl),
+                    SequenceEvent::Press(C),
+                    SequenceEvent::Complete,
+                ],
+            },
+            Sequence {
                 // YO with a delay in the middle
                 events: &[
                     SequenceEvent::Press(Y),
@@ -575,8 +606,14 @@ mod test {
         assert_keys(&[LCtrl, C], layout.tick());
         assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[], layout.tick());
-        // Test a sequence with a delay (aka The Mr Owl test)
+        // Test the use of Complete
+        assert_keys(&[], layout.tick());
         assert_keys(&[], layout.event(Press(0, 1)));
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[LCtrl, C], layout.tick());
+        assert_keys(&[], layout.tick());
+        // Test a sequence with a delay (aka The Mr Owl test)
+        assert_keys(&[], layout.event(Press(0, 2)));
         assert_keys(&[Y], layout.tick());
         assert_keys(&[], layout.tick()); // "Eh Ooone!"
         assert_keys(&[], layout.tick()); // "Eh two!"
@@ -584,7 +621,7 @@ mod test {
         assert_keys(&[O], layout.tick()); // CHOMP!
         assert_keys(&[], layout.tick());
         // Test really long sequences (aka macros)...
-        assert_keys(&[], layout.event(Press(0, 2)));
+        assert_keys(&[], layout.event(Press(0, 3)));
         assert_keys(&[LShift], layout.tick());
         assert_keys(&[LShift, U], layout.tick());
         assert_keys(&[LShift], layout.tick());

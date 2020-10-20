@@ -25,6 +25,9 @@ pub enum SequenceEvent {
         /// The full list of Sequence Events (that aren't Continue())
         events: &'static [SequenceEvent],
     },
+    /// Cancels the running sequence and can be used to mark the end of a sequence
+    /// instead of using a number of Release() events
+    Complete,
 }
 
 impl SequenceEvent {
@@ -82,6 +85,8 @@ pub enum Action {
         /// An array of SequenceEvents that will be triggered (in order)
         events: &'static [SequenceEvent],
     },
+    /// Cancels any running sequences
+    CancelSequence,
 }
 impl Action {
     /// Gets the layer number if the action is the `Layer` action.
