@@ -399,6 +399,10 @@ impl Layout {
                 if let Some(chunk) = events.chunks(chunk_length).next() {
                     for key_event in chunk {
                         match *key_event {
+                            SequenceEvent::Tap(keycode) => {
+                                self.sequenced.push_back(SequenceEvent::Press(keycode));
+                                self.sequenced.push_back(SequenceEvent::Release(keycode));
+                            }
                             SequenceEvent::Press(keycode) => {
                                 self.sequenced.push_back(SequenceEvent::Press(keycode));
                             }

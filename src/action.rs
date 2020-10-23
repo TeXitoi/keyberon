@@ -10,6 +10,8 @@ pub enum SequenceEvent {
     Press(KeyCode),
     /// Key release/keyup
     Release(KeyCode),
+    /// A shortcut for `Press(KeyCode), Release(KeyCode)`
+    Tap(KeyCode),
     /// For sequences that need to wait a bit before continuing
     Delay {
         /// A delay (in ticks) to wait before executing the next SequenceEvent
