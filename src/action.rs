@@ -2,6 +2,18 @@
 
 use crate::key_code::KeyCode;
 
+/// Behavior configuration of HoldTap.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum HoldTapConfig {
+    /// Only the timeout will determine between hold and tap action.
+    Default,
+    /// If there is a key press, the hold action is activated.
+    HoldOnOtherKeyPress,
+    /// If there is a release and a press of another key, the hold
+    /// action is activated.
+    PermissiveHold,
+}
+
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -40,6 +52,8 @@ pub enum Action {
         hold: &'static Action,
         /// The tap action.
         tap: &'static Action,
+        /// Behavior configuration.
+        config: HoldTapConfig,
     },
 }
 impl Action {
