@@ -1,6 +1,6 @@
 //! Layout management.
 
-use crate::action::Action;
+use crate::action::{Action, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::consts::U64;
@@ -15,6 +15,8 @@ use State::*;
 /// key i=2, j=3 on the layer 1.
 pub type Layers = &'static [&'static [&'static [Action]]];
 
+type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
+
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
 pub struct Layout {
@@ -22,7 +24,7 @@ pub struct Layout {
     default_layer: usize,
     states: Vec<State, U64>,
     waiting: Option<WaitingState>,
-    stacked: ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>,
+    stacked: Stack,
 }
 
 /// An event on the key matrix.
@@ -65,6 +67,22 @@ impl Event {
             }
         }
     }
+
+    /// Returns `true` if the event is a key press.
+    pub fn is_press(self) -> bool {
+        match self {
+            Event::Press(..) => true,
+            Event::Release(..) => false,
+        }
+    }
+
+    /// Returns `true` if the event is a key release.
+    pub fn is_release(self) -> bool {
+        match self {
+            Event::Release(..) => true,
+            Event::Press(..) => false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -102,13 +120,52 @@ impl State {
 struct WaitingState {
     coord: (u8, u8),
     timeout: u16,
+    delay: u16,
     hold: &'static Action,
     tap: &'static Action,
+    config: HoldTapConfig,
+}
+enum WaitingAction {
+    Hold,
+    Tap,
+    NoOp,
 }
 impl WaitingState {
-    fn tick(&mut self) -> bool {
+    fn tick(&mut self, stacked: &Stack) -> WaitingAction {
         self.timeout = self.timeout.saturating_sub(1);
-        self.timeout == 0
+        match self.config {
+            HoldTapConfig::Default => (),
+            HoldTapConfig::HoldOnOtherKeyPress => {
+                if stacked.iter().any(|s| s.event.is_press()) {
+                    return WaitingAction::Hold;
+                }
+            }
+            HoldTapConfig::PermissiveHold => {
+                for (x, s) in stacked.iter().enumerate() {
+                    if s.event.is_press() {
+                        let (i, j) = s.event.coord();
+                        let target = Event::Release(i, j);
+                        if stacked.iter().skip(x + 1).any(|s| s.event == target) {
+                            return WaitingAction::Hold;
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(&Stacked { since, .. }) = stacked
+            .iter()
+            .find(|s| self.is_corresponding_release(&s.event))
+        {
+            if self.timeout >= self.delay - since {
+                WaitingAction::Tap
+            } else {
+                WaitingAction::Hold
+            }
+        } else if self.timeout == 0 {
+            WaitingAction::Hold
+        } else {
+            WaitingAction::NoOp
+        }
     }
     fn is_corresponding_release(&self, event: &Event) -> bool {
         match event {
@@ -174,11 +231,11 @@ impl Layout {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         match &mut self.waiting {
-            Some(w) => {
-                if w.tick() {
-                    self.waiting_into_hold();
-                }
-            }
+            Some(w) => match w.tick(&self.stacked) {
+                WaitingAction::Hold => self.waiting_into_hold(),
+                WaitingAction::Tap => self.waiting_into_tap(),
+                WaitingAction::NoOp => (),
+            },
             None => {
                 if let Some(s) = self.stacked.pop_front() {
                     self.unstack(s);
@@ -206,20 +263,11 @@ impl Layout {
     /// A key event.
     ///
     /// Returns an iterator on the current key code state.
-    pub fn event<'a>(&'a mut self, event: Event) -> impl Iterator<Item = KeyCode> + 'a {
+    pub fn event<'a>(&'a mut self, event: Event) {
         if let Some(stacked) = self.stacked.push_back(event.into()) {
             self.waiting_into_hold();
             self.unstack(stacked);
         }
-        if self
-            .waiting
-            .as_ref()
-            .map(|w| w.is_corresponding_release(&event))
-            .unwrap_or(false)
-        {
-            self.waiting_into_tap();
-        }
-        self.keycodes()
     }
     fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action {
         use crate::action::Action::*;
@@ -245,25 +293,21 @@ impl Layout {
         use Action::*;
         match *action {
             NoOp | Trans => (),
-            HoldTap { timeout, hold, tap } => {
+            HoldTap {
+                timeout,
+                hold,
+                tap,
+                config,
+            } => {
                 let waiting = WaitingState {
                     coord,
-                    timeout: timeout.saturating_sub(delay),
+                    timeout,
+                    delay,
                     hold,
                     tap,
+                    config,
                 };
                 self.waiting = Some(waiting);
-                if let Some(Stacked { since, .. }) = self
-                    .stacked
-                    .iter()
-                    .find(|s| waiting.is_corresponding_release(&s.event))
-                {
-                    if timeout >= delay - since {
-                        self.waiting_into_tap();
-                    } else {
-                        self.waiting_into_hold();
-                    }
-                }
             }
             KeyCode(keycode) => {
                 let _ = self.states.push(NormalKey { coord, keycode });
@@ -306,12 +350,13 @@ mod test {
     extern crate std;
     use super::{Event::*, Layers, Layout};
     use crate::action::Action::*;
+    use crate::action::HoldTapConfig;
     use crate::action::{k, l, m};
     use crate::key_code::KeyCode;
     use crate::key_code::KeyCode::*;
     use std::collections::BTreeSet;
 
-    //#[track_caller]
+    #[track_caller]
     fn assert_keys(expected: &[KeyCode], iter: impl Iterator<Item = KeyCode>) {
         let expected: BTreeSet<_> = expected.iter().copied().collect();
         let tested = iter.collect();
@@ -319,36 +364,147 @@ mod test {
     }
 
     #[test]
-    fn test() {
+    fn basic_hold_tap() {
         static LAYERS: Layers = &[
             &[&[
                 HoldTap {
                     timeout: 200,
                     hold: &l(1),
                     tap: &k(Space),
+                    config: HoldTapConfig::Default,
                 },
                 HoldTap {
                     timeout: 200,
                     hold: &k(LCtrl),
                     tap: &k(Enter),
+                    config: HoldTapConfig::Default,
                 },
             ]],
             &[&[Trans, m(&[LCtrl, Enter])]],
         ];
         let mut layout = Layout::new(LAYERS);
         assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.event(Press(0, 1)));
+        layout.event(Press(0, 1));
         assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.event(Press(0, 0)));
+        layout.event(Press(0, 0));
         assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.event(Release(0, 0)));
+        layout.event(Release(0, 0));
         for _ in 0..197 {
             assert_keys(&[], layout.tick());
         }
+        assert_keys(&[], layout.tick());
+        assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[LCtrl], layout.tick());
         assert_keys(&[LCtrl, Space], layout.tick());
         assert_keys(&[LCtrl], layout.tick());
-        assert_keys(&[LCtrl], layout.event(Release(0, 1)));
+        layout.event(Release(0, 1));
+        assert_keys(&[], layout.tick());
+    }
+
+    #[test]
+    fn hold_tap_interleaved_timeout() {
+        static LAYERS: Layers = &[&[&[
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::Default,
+            },
+            HoldTap {
+                timeout: 20,
+                hold: &k(LCtrl),
+                tap: &k(Enter),
+                config: HoldTapConfig::Default,
+            },
+        ]]];
+        let mut layout = Layout::new(LAYERS);
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 0));
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 1));
+        for _ in 0..15 {
+            assert_keys(&[], layout.tick());
+        }
+        layout.event(Release(0, 0));
+        assert_keys(&[Space], layout.tick());
+        for _ in 0..10 {
+            assert_keys(&[Space], layout.tick());
+        }
+        layout.event(Release(0, 1));
+        assert_keys(&[Space, LCtrl], layout.tick());
+        assert_keys(&[LCtrl], layout.tick());
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.tick());
+    }
+
+    #[test]
+    fn hold_on_press() {
+        static LAYERS: Layers = &[&[&[
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::HoldOnOtherKeyPress,
+            },
+            k(Enter),
+        ]]];
+        let mut layout = Layout::new(LAYERS);
+
+        // Press another key before timeout
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 0));
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 1));
+        assert_keys(&[LAlt], layout.tick());
+        assert_keys(&[LAlt, Enter], layout.tick());
+        layout.event(Release(0, 0));
+        assert_keys(&[Enter], layout.tick());
+        layout.event(Release(0, 1));
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.tick());
+
+        // Press another key after timeout
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 0));
+        for _ in 0..200 {
+            assert_keys(&[], layout.tick());
+        }
+        assert_keys(&[LAlt], layout.tick());
+        layout.event(Press(0, 1));
+        assert_keys(&[LAlt, Enter], layout.tick());
+        layout.event(Release(0, 0));
+        assert_keys(&[Enter], layout.tick());
+        layout.event(Release(0, 1));
+        assert_keys(&[], layout.tick());
+        assert_keys(&[], layout.tick());
+    }
+
+    #[test]
+    fn permissive_hold() {
+        static LAYERS: Layers = &[&[&[
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::PermissiveHold,
+            },
+            k(Enter),
+        ]]];
+        let mut layout = Layout::new(LAYERS);
+
+        // Press and release another key before timeout
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 0));
+        assert_keys(&[], layout.tick());
+        layout.event(Press(0, 1));
+        assert_keys(&[], layout.tick());
+        layout.event(Release(0, 1));
+        assert_keys(&[LAlt], layout.tick());
+        assert_keys(&[LAlt, Enter], layout.tick());
+        assert_keys(&[LAlt], layout.tick());
+        assert_keys(&[LAlt], layout.tick());
+        layout.event(Release(0, 0));
+        assert_keys(&[], layout.tick());
         assert_keys(&[], layout.tick());
     }
 
@@ -360,12 +516,12 @@ mod test {
         ];
         let mut layout = Layout::new(LAYERS);
         assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.event(Press(0, 0)));
+        layout.event(Press(0, 0));
         assert_keys(&[LShift], layout.tick());
-        assert_keys(&[LShift], layout.event(Press(0, 1)));
+        layout.event(Press(0, 1));
         assert_keys(&[LShift, E], layout.tick());
-        assert_keys(&[LShift, E], layout.event(Release(0, 1)));
-        assert_keys(&[LShift, E], layout.event(Release(0, 0)));
+        layout.event(Release(0, 1));
+        layout.event(Release(0, 0));
         assert_keys(&[LShift], layout.tick());
         assert_keys(&[], layout.tick());
     }
