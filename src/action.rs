@@ -6,11 +6,22 @@ use crate::key_code::KeyCode;
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum HoldTapConfig {
     /// Only the timeout will determine between hold and tap action.
+    ///
+    /// This is a sane default.
     Default,
     /// If there is a key press, the hold action is activated.
+    ///
+    /// This behavior is interesting for a key which the tap action is
+    /// not used in the flow of typing, like escape for example. If
+    /// you are annoyed by accidental tap, you can try this behavior.
     HoldOnOtherKeyPress,
     /// If there is a release and a press of another key, the hold
     /// action is activated.
+    ///
+    /// This behavior is interesting for fast typist: the different
+    /// between hold and tap would more be based on the sequence of
+    /// events than on timing. Be aware that doing the good succession
+    /// of key might require some training.
     PermissiveHold,
 }
 
@@ -44,6 +55,11 @@ pub enum Action {
     /// and a classical key on the tap action. Any action can be
     /// performed, but using a `HoldTap` in an `HoldTap` is not
     /// specified (but guaranteed to not crash).
+    ///
+    /// Different behaviors can be configured using the config field,
+    /// but whatever the configuration is, if the key is pressed more
+    /// than `timeout`, the hold action is activated (if no other
+    /// action was determined before).
     HoldTap {
         /// The duration, in ticks (usually milliseconds) giving the
         /// difference between a hold and a tap.
