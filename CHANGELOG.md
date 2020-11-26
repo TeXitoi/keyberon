@@ -4,6 +4,8 @@ Breaking changes:
 * Update to generic_array 0.14, that is exposed in matrix. The update
   should be transparent.
 * `Action::HoldTap` now takes a configuration for different behaviors.
+* `Action::HoldTap` now takes the `tap_hold_interval` field. Not
+  implemented yet.
 
 # v0.1.1
 

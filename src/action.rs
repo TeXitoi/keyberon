@@ -70,6 +70,20 @@ pub enum Action {
         tap: &'static Action,
         /// Behavior configuration.
         config: HoldTapConfig,
+        /// Configuration of the tap and hold holds the tap action.
+        ///
+        /// If you press, release the key in such a configuration that
+        /// the tap behavior is done, and then press again the key in
+        /// less than `tap_hold_interval` ticks, the tap action will
+        /// be used. This allow to have a tap action holded by
+        /// "tap+hold" the key, allowing the computer to auto repeat
+        /// the tap behavior.
+        ///
+        /// To desactivate the functionnality, set this to 0.
+        ///
+        /// Not implemented yet, to not have behavior change with an
+        /// update, set this to 0.
+        tap_hold_interval: u16,
     },
 }
 impl Action {

@@ -298,6 +298,7 @@ impl Layout {
                 hold,
                 tap,
                 config,
+                ..
             } => {
                 let waiting = WaitingState {
                     coord,
@@ -372,12 +373,14 @@ mod test {
                     hold: &l(1),
                     tap: &k(Space),
                     config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
                 },
                 HoldTap {
                     timeout: 200,
                     hold: &k(LCtrl),
                     tap: &k(Enter),
                     config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
                 },
             ]],
             &[&[Trans, m(&[LCtrl, Enter])]],
@@ -409,12 +412,14 @@ mod test {
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::Default,
+                tap_hold_interval: 0,
             },
             HoldTap {
                 timeout: 20,
                 hold: &k(LCtrl),
                 tap: &k(Enter),
                 config: HoldTapConfig::Default,
+                tap_hold_interval: 0,
             },
         ]]];
         let mut layout = Layout::new(LAYERS);
@@ -445,6 +450,7 @@ mod test {
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::HoldOnOtherKeyPress,
+                tap_hold_interval: 0,
             },
             k(Enter),
         ]]];
@@ -487,6 +493,7 @@ mod test {
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::PermissiveHold,
+                tap_hold_interval: 0,
             },
             k(Enter),
         ]]];
