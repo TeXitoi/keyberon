@@ -3,6 +3,7 @@
 Breaking changes:
 * Update to generic_array 0.14, that is exposed in matrix. The update
   should be transparent.
+* `Action::HoldTap` now takes a configuration for different behaviors.
 
 # v0.1.1
 
