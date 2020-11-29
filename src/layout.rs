@@ -13,17 +13,20 @@ use State::*;
 /// The first level correspond to the layer, the two others to the
 /// switch matrix.  For example, `layers[1][2][3]` correspond to the
 /// key i=2, j=3 on the layer 1.
-pub type Layers = &'static [&'static [&'static [Action]]];
+pub type Layers<T = core::convert::Infallible> = &'static [&'static [&'static [Action<T>]]];
 
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout {
-    layers: Layers,
+pub struct Layout<T = core::convert::Infallible>
+where
+    T: 'static,
+{
+    layers: Layers<T>,
     default_layer: usize,
-    states: Vec<State, U64>,
-    waiting: Option<WaitingState>,
+    states: Vec<State<T>, U64>,
+    waiting: Option<WaitingState<T>>,
     stacked: Stack,
 }
 
@@ -85,12 +88,49 @@ impl Event {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-enum State {
+/// Event from custom action.
+#[derive(Debug, PartialEq, Eq)]
+pub enum CustomEvent<T: 'static> {
+    /// No custom action.
+    NoEvent,
+    /// The given custom action key is pressed.
+    Press(&'static T),
+    /// The given custom action key is released.
+    Release(&'static T),
+}
+impl<T> CustomEvent<T> {
+    /// Update an event according to a new event.
+    ///
+    ///The event can only be modified in the order `NoEvent < Press <
+    /// Release`
+    fn update(&mut self, e: Self) {
+        use CustomEvent::*;
+        match (&e, &self) {
+            (Release(_), NoEvent) | (Release(_), Press(_)) => *self = e,
+            (Press(_), NoEvent) => *self = e,
+            _ => (),
+        }
+    }
+}
+impl<T> Default for CustomEvent<T> {
+    fn default() -> Self {
+        CustomEvent::NoEvent
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum State<T: 'static> {
     NormalKey { keycode: KeyCode, coord: (u8, u8) },
     LayerModifier { value: usize, coord: (u8, u8) },
+    Custom { value: &'static T, coord: (u8, u8) },
 }
-impl State {
+impl<T> Copy for State<T> {}
+impl<T> Clone for State<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<T: 'static> State<T> {
     fn keycode(&self) -> Option<KeyCode> {
         match self {
             NormalKey { keycode, .. } => Some(*keycode),
@@ -102,9 +142,13 @@ impl State {
             _ => Some(*self),
         }
     }
-    fn release(&self, c: (u8, u8)) -> Option<Self> {
+    fn release(&self, c: (u8, u8), custom: &mut CustomEvent<T>) -> Option<Self> {
         match *self {
             NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == c => None,
+            Custom { value, coord } if coord == c => {
+                custom.update(CustomEvent::Release(value));
+                None
+            }
             _ => Some(*self),
         }
     }
@@ -117,12 +161,12 @@ impl State {
 }
 
 #[derive(Debug, Copy, Clone)]
-struct WaitingState {
+struct WaitingState<T: 'static> {
     coord: (u8, u8),
     timeout: u16,
     delay: u16,
-    hold: &'static Action,
-    tap: &'static Action,
+    hold: &'static Action<T>,
+    tap: &'static Action<T>,
     config: HoldTapConfig,
 }
 enum WaitingAction {
@@ -130,7 +174,7 @@ enum WaitingAction {
     Tap,
     NoOp,
 }
-impl WaitingState {
+impl<T> WaitingState<T> {
     fn tick(&mut self, stacked: &Stack) -> WaitingAction {
         self.timeout = self.timeout.saturating_sub(1);
         match self.config {
@@ -191,9 +235,9 @@ impl Stacked {
     }
 }
 
-impl Layout {
+impl<T: 'static> Layout<T> {
     /// Creates a new `Layout` object.
-    pub fn new(layers: Layers) -> Self {
+    pub fn new(layers: Layers<T>) -> Self {
         Self {
             layers,
             default_layer: 0,
@@ -206,20 +250,24 @@ impl Layout {
     pub fn keycodes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
         self.states.iter().filter_map(State::keycode)
     }
-    fn waiting_into_hold(&mut self) {
+    fn waiting_into_hold(&mut self) -> CustomEvent<T> {
         if let Some(w) = &self.waiting {
             let hold = w.hold;
             let coord = w.coord;
             self.waiting = None;
-            self.do_action(hold, coord, 0);
+            self.do_action(hold, coord, 0)
+        } else {
+            CustomEvent::NoEvent
         }
     }
-    fn waiting_into_tap(&mut self) {
+    fn waiting_into_tap(&mut self) -> CustomEvent<T> {
         if let Some(w) = &self.waiting {
             let tap = w.tap;
             let coord = w.coord;
             self.waiting = None;
-            self.do_action(tap, coord, 0);
+            self.do_action(tap, coord, 0)
+        } else {
+            CustomEvent::NoEvent
         }
     }
     /// A time event.
@@ -227,49 +275,47 @@ impl Layout {
     /// This method must be called regularly, typically every millisecond.
     ///
     /// Returns an iterator on the current key code state.
-    pub fn tick<'a>(&'a mut self) -> impl Iterator<Item = KeyCode> + 'a {
+    pub fn tick<'a>(&'a mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         match &mut self.waiting {
             Some(w) => match w.tick(&self.stacked) {
                 WaitingAction::Hold => self.waiting_into_hold(),
                 WaitingAction::Tap => self.waiting_into_tap(),
-                WaitingAction::NoOp => (),
+                WaitingAction::NoOp => CustomEvent::NoEvent,
             },
-            None => {
-                if let Some(s) = self.stacked.pop_front() {
-                    self.unstack(s);
-                }
-            }
+            None => match self.stacked.pop_front() {
+                Some(s) => self.unstack(s),
+                None => CustomEvent::NoEvent,
+            },
         }
-        self.keycodes()
     }
-    fn unstack(&mut self, stacked: Stacked) {
+    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<T> {
         use Event::*;
         match stacked.event {
             Release(i, j) => {
+                let mut custom = CustomEvent::NoEvent;
                 self.states = self
                     .states
                     .iter()
-                    .filter_map(|s| s.release((i, j)))
-                    .collect()
+                    .filter_map(|s| s.release((i, j), &mut custom))
+                    .collect();
+                custom
             }
             Press(i, j) => {
                 let action = self.press_as_action((i, j), self.current_layer());
-                self.do_action(action, (i, j), stacked.since);
+                self.do_action(action, (i, j), stacked.since)
             }
         }
     }
-    /// A key event.
-    ///
-    /// Returns an iterator on the current key code state.
+    /// Register a key event.
     pub fn event<'a>(&'a mut self, event: Event) {
         if let Some(stacked) = self.stacked.push_back(event.into()) {
             self.waiting_into_hold();
             self.unstack(stacked);
         }
     }
-    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action {
+    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
         use crate::action::Action::*;
         let action = self
             .layers
@@ -288,19 +334,24 @@ impl Layout {
             Some(action) => action,
         }
     }
-    fn do_action(&mut self, action: &Action, coord: (u8, u8), delay: u16) {
+    fn do_action(
+        &mut self,
+        action: &'static Action<T>,
+        coord: (u8, u8),
+        delay: u16,
+    ) -> CustomEvent<T> {
         assert!(self.waiting.is_none());
         use Action::*;
-        match *action {
+        match action {
             NoOp | Trans => (),
-            HoldTap {
+            &HoldTap {
                 timeout,
                 hold,
                 tap,
                 config,
                 ..
             } => {
-                let waiting = WaitingState {
+                let waiting: WaitingState<T> = WaitingState {
                     coord,
                     timeout,
                     delay,
@@ -310,28 +361,36 @@ impl Layout {
                 };
                 self.waiting = Some(waiting);
             }
-            KeyCode(keycode) => {
+            &KeyCode(keycode) => {
                 let _ = self.states.push(NormalKey { coord, keycode });
             }
-            MultipleKeyCodes(v) => {
+            &MultipleKeyCodes(v) => {
                 for &keycode in v {
                     let _ = self.states.push(NormalKey { coord, keycode });
                 }
             }
-            MultipleActions(v) => {
+            &MultipleActions(v) => {
+                let mut custom = CustomEvent::NoEvent;
                 for action in v {
-                    self.do_action(action, coord, delay);
+                    custom.update(self.do_action(action, coord, delay));
                 }
+                return custom;
             }
-            Layer(value) => {
+            &Layer(value) => {
                 let _ = self.states.push(LayerModifier { value, coord });
             }
             DefaultLayer(value) => {
-                if value < self.layers.len() {
-                    self.default_layer = value
+                if *value < self.layers.len() {
+                    self.default_layer = *value
+                }
+            }
+            Custom(value) => {
+                if self.states.push(State::Custom { value, coord }).is_ok() {
+                    return CustomEvent::Press(value);
                 }
             }
         }
+        CustomEvent::NoEvent
     }
     fn current_layer(&self) -> usize {
         let mut iter = self.states.iter().filter_map(State::get_layer);
@@ -349,7 +408,7 @@ impl Layout {
 #[cfg(test)]
 mod test {
     extern crate std;
-    use super::{Event::*, Layers, Layout};
+    use super::{Event::*, Layers, Layout, *};
     use crate::action::Action::*;
     use crate::action::HoldTapConfig;
     use crate::action::{k, l, m};
@@ -386,22 +445,32 @@ mod test {
             &[&[Trans, m(&[LCtrl, Enter])]],
         ];
         let mut layout = Layout::new(LAYERS);
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 1));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Release(0, 0));
         for _ in 0..197 {
-            assert_keys(&[], layout.tick());
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
         }
-        assert_keys(&[], layout.tick());
-        assert_keys(&[LCtrl], layout.tick());
-        assert_keys(&[LCtrl], layout.tick());
-        assert_keys(&[LCtrl, Space], layout.tick());
-        assert_keys(&[LCtrl], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl, Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
         layout.event(Release(0, 1));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
     }
 
     #[test]
@@ -423,23 +492,32 @@ mod test {
             },
         ]]];
         let mut layout = Layout::new(LAYERS);
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 1));
         for _ in 0..15 {
-            assert_keys(&[], layout.tick());
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
         }
         layout.event(Release(0, 0));
-        assert_keys(&[Space], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
         for _ in 0..10 {
-            assert_keys(&[Space], layout.tick());
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[Space], layout.keycodes());
         }
         layout.event(Release(0, 1));
-        assert_keys(&[Space, LCtrl], layout.tick());
-        assert_keys(&[LCtrl], layout.tick());
-        assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space, LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
     }
 
     #[test]
@@ -457,32 +535,46 @@ mod test {
         let mut layout = Layout::new(LAYERS);
 
         // Press another key before timeout
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 1));
-        assert_keys(&[LAlt], layout.tick());
-        assert_keys(&[LAlt, Enter], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt, Enter], layout.keycodes());
         layout.event(Release(0, 0));
-        assert_keys(&[Enter], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter], layout.keycodes());
         layout.event(Release(0, 1));
-        assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
 
         // Press another key after timeout
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
         for _ in 0..200 {
-            assert_keys(&[], layout.tick());
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
         }
-        assert_keys(&[LAlt], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
         layout.event(Press(0, 1));
-        assert_keys(&[LAlt, Enter], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt, Enter], layout.keycodes());
         layout.event(Release(0, 0));
-        assert_keys(&[Enter], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter], layout.keycodes());
         layout.event(Release(0, 1));
-        assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
     }
 
     #[test]
@@ -500,19 +592,28 @@ mod test {
         let mut layout = Layout::new(LAYERS);
 
         // Press and release another key before timeout
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 1));
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Release(0, 1));
-        assert_keys(&[LAlt], layout.tick());
-        assert_keys(&[LAlt, Enter], layout.tick());
-        assert_keys(&[LAlt], layout.tick());
-        assert_keys(&[LAlt], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt, Enter], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
         layout.event(Release(0, 0));
-        assert_keys(&[], layout.tick());
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
     }
 
     #[test]
@@ -522,14 +623,41 @@ mod test {
             &[&[Trans, k(E)]],
         ];
         let mut layout = Layout::new(LAYERS);
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
-        assert_keys(&[LShift], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
         layout.event(Press(0, 1));
-        assert_keys(&[LShift, E], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, E], layout.keycodes());
         layout.event(Release(0, 1));
         layout.event(Release(0, 0));
-        assert_keys(&[LShift], layout.tick());
-        assert_keys(&[], layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn custom() {
+        static LAYERS: Layers<u8> = &[&[&[Action::Custom(42)]]];
+        let mut layout = Layout::new(LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Custom event
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::Press(&42), layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // nothing more
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // release custom
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::Release(&42), layout.tick());
+        assert_keys(&[], layout.keycodes());
     }
 }
