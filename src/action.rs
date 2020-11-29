@@ -28,7 +28,10 @@ pub enum HoldTapConfig {
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Action {
+pub enum Action<T = core::convert::Infallible>
+where
+    T: 'static,
+{
     /// No operation action: just do nothing.
     NoOp,
     /// Transparent, i.e. get the action from the default layer. On
@@ -41,7 +44,7 @@ pub enum Action {
     /// complex short cuts as Ctrl+Alt+Del in a single key press.
     MultipleKeyCodes(&'static [KeyCode]),
     /// Multiple actions send at the same time.
-    MultipleActions(&'static [Action]),
+    MultipleActions(&'static [Action<T>]),
     /// While pressed, change the current layer. That's the classical
     /// Fn key. If several layer actions are active at the same time,
     /// their number are summed. For example, if you press at the same
@@ -65,9 +68,9 @@ pub enum Action {
         /// difference between a hold and a tap.
         timeout: u16,
         /// The hold action.
-        hold: &'static Action,
+        hold: &'static Action<T>,
         /// The tap action.
-        tap: &'static Action,
+        tap: &'static Action<T>,
         /// Behavior configuration.
         config: HoldTapConfig,
         /// Configuration of the tap and hold holds the tap action.
@@ -85,8 +88,10 @@ pub enum Action {
         /// update, set this to 0.
         tap_hold_interval: u16,
     },
+    /// Custom action.
+    Custom(T),
 }
-impl Action {
+impl<T> Action<T> {
     /// Gets the layer number if the action is the `Layer` action.
     pub fn layer(self) -> Option<usize> {
         match self {
@@ -106,24 +111,24 @@ impl Action {
 
 /// A shortcut to create a `Action::KeyCode`, useful to create compact
 /// layout.
-pub const fn k(kc: KeyCode) -> Action {
+pub const fn k<T>(kc: KeyCode) -> Action<T> {
     Action::KeyCode(kc)
 }
 
 /// A shortcut to create a `Action::Layer`, useful to create compact
 /// layout.
-pub const fn l(layer: usize) -> Action {
+pub const fn l<T>(layer: usize) -> Action<T> {
     Action::Layer(layer)
 }
 
 /// A shortcut to create a `Action::DefaultLayer`, useful to create compact
 /// layout.
-pub const fn d(layer: usize) -> Action {
+pub const fn d<T>(layer: usize) -> Action<T> {
     Action::DefaultLayer(layer)
 }
 
-/// A shortcut to create a `Action::KeyCode`, useful to create compact
-/// layout.
-pub const fn m(kcs: &'static [KeyCode]) -> Action {
+/// A shortcut to create a `Action::MultipleKeyCodes`, useful to
+/// create compact layout.
+pub const fn m<T>(kcs: &'static [KeyCode]) -> Action<T> {
     Action::MultipleKeyCodes(kcs)
 }
