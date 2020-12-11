@@ -274,7 +274,8 @@ impl<T: 'static> Layout<T> {
     ///
     /// This method must be called regularly, typically every millisecond.
     ///
-    /// Returns an iterator on the current key code state.
+    /// Returns the corresponding `CustomEvent`, allowing to manage
+    /// custom actions thanks to the `Action::Custom` variant.
     pub fn tick<'a>(&'a mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
