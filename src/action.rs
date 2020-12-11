@@ -3,6 +3,7 @@
 use crate::key_code::KeyCode;
 
 /// Behavior configuration of HoldTap.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum HoldTapConfig {
     /// Only the timeout will determine between hold and tap action.
