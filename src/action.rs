@@ -90,6 +90,11 @@ where
         tap_hold_interval: u16,
     },
     /// Custom action.
+    ///
+    /// Define a user defined action. This enum can be anything you
+    /// want, as long as it has the `'static` lifetime. It can be used
+    /// to drive any non keyboard related actions that you might
+    /// manage with key events.
     Custom(T),
 }
 impl<T> Action<T> {
