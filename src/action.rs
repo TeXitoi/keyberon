@@ -43,10 +43,37 @@ impl SequenceEvent {
     }
 }
 
+/// Behavior configuration of HoldTap.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum HoldTapConfig {
+    /// Only the timeout will determine between hold and tap action.
+    ///
+    /// This is a sane default.
+    Default,
+    /// If there is a key press, the hold action is activated.
+    ///
+    /// This behavior is interesting for a key which the tap action is
+    /// not used in the flow of typing, like escape for example. If
+    /// you are annoyed by accidental tap, you can try this behavior.
+    HoldOnOtherKeyPress,
+    /// If there is a release and a press of another key, the hold
+    /// action is activated.
+    ///
+    /// This behavior is interesting for fast typist: the different
+    /// between hold and tap would more be based on the sequence of
+    /// events than on timing. Be aware that doing the good succession
+    /// of key might require some training.
+    PermissiveHold,
+}
+
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Action {
+pub enum Action<T = core::convert::Infallible>
+where
+    T: 'static,
+{
     /// No operation action: just do nothing.
     NoOp,
     /// Transparent, i.e. get the action from the default layer. On
@@ -59,7 +86,7 @@ pub enum Action {
     /// complex short cuts as Ctrl+Alt+Del in a single key press.
     MultipleKeyCodes(&'static [KeyCode]),
     /// Multiple actions send at the same time.
-    MultipleActions(&'static [Action]),
+    MultipleActions(&'static [Action<T>]),
     /// While pressed, change the current layer. That's the classical
     /// Fn key. If several layer actions are active at the same time,
     /// their number are summed. For example, if you press at the same
@@ -73,14 +100,35 @@ pub enum Action {
     /// and a classical key on the tap action. Any action can be
     /// performed, but using a `HoldTap` in an `HoldTap` is not
     /// specified (but guaranteed to not crash).
+    ///
+    /// Different behaviors can be configured using the config field,
+    /// but whatever the configuration is, if the key is pressed more
+    /// than `timeout`, the hold action is activated (if no other
+    /// action was determined before).
     HoldTap {
         /// The duration, in ticks (usually milliseconds) giving the
         /// difference between a hold and a tap.
         timeout: u16,
         /// The hold action.
-        hold: &'static Action,
+        hold: &'static Action<T>,
         /// The tap action.
-        tap: &'static Action,
+        tap: &'static Action<T>,
+        /// Behavior configuration.
+        config: HoldTapConfig,
+        /// Configuration of the tap and hold holds the tap action.
+        ///
+        /// If you press, release the key in such a configuration that
+        /// the tap behavior is done, and then press again the key in
+        /// less than `tap_hold_interval` ticks, the tap action will
+        /// be used. This allow to have a tap action holded by
+        /// "tap+hold" the key, allowing the computer to auto repeat
+        /// the tap behavior.
+        ///
+        /// To desactivate the functionnality, set this to 0.
+        ///
+        /// Not implemented yet, to not have behavior change with an
+        /// update, set this to 0.
+        tap_hold_interval: u16,
     },
     /// A sequence of SequenceEvents
     Sequence {
@@ -89,8 +137,15 @@ pub enum Action {
     },
     /// Cancels any running sequences
     CancelSequence,
+    /// Custom action.
+    ///
+    /// Define a user defined action. This enum can be anything you
+    /// want, as long as it has the `'static` lifetime. It can be used
+    /// to drive any non keyboard related actions that you might
+    /// manage with key events.
+    Custom(T),
 }
-impl Action {
+impl<T> Action<T> {
     /// Gets the layer number if the action is the `Layer` action.
     pub fn layer(self) -> Option<usize> {
         match self {
@@ -110,24 +165,24 @@ impl Action {
 
 /// A shortcut to create a `Action::KeyCode`, useful to create compact
 /// layout.
-pub const fn k(kc: KeyCode) -> Action {
+pub const fn k<T>(kc: KeyCode) -> Action<T> {
     Action::KeyCode(kc)
 }
 
 /// A shortcut to create a `Action::Layer`, useful to create compact
 /// layout.
-pub const fn l(layer: usize) -> Action {
+pub const fn l<T>(layer: usize) -> Action<T> {
     Action::Layer(layer)
 }
 
 /// A shortcut to create a `Action::DefaultLayer`, useful to create compact
 /// layout.
-pub const fn d(layer: usize) -> Action {
+pub const fn d<T>(layer: usize) -> Action<T> {
     Action::DefaultLayer(layer)
 }
 
-/// A shortcut to create `Action::MultipleKeyCodes`, useful to create compact
-/// layout.
-pub const fn m(kcs: &'static [KeyCode]) -> Action {
+/// A shortcut to create a `Action::MultipleKeyCodes`, useful to
+/// create compact layout.
+pub const fn m<T>(kcs: &'static [KeyCode]) -> Action<T> {
     Action::MultipleKeyCodes(kcs)
 }

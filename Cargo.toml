@@ -1,6 +1,6 @@
 [package]
 name = "keyberon"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Guillaume Pinot <texitoi@texitoi.eu>", "Robin Krahl <robin.krahl@ireas.org>"]
 edition = "2018"
 description = "Pure Rust keyboard firmware."
@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 either = { version = "1.6", default-features = false }
-generic-array = "0.13"
+generic-array = "0.14"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 usb-device = "0.2.0"
 heapless = "0.5"

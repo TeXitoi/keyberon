@@ -68,9 +68,11 @@ impl<C, R> Matrix<C, R> {
         &'a mut R: IntoIterator<Item = &'a mut dyn OutputPin<Error = E>>,
         R: HeterogenousArray,
         R::Len: ArrayLength<GenericArray<bool, C::Len>>,
+        R::Len: heapless::ArrayLength<GenericArray<bool, C::Len>>,
         &'a C: IntoIterator<Item = &'a dyn InputPin<Error = E>>,
         C: HeterogenousArray,
         C::Len: ArrayLength<bool>,
+        C::Len: heapless::ArrayLength<bool>,
     {
         let cols = &self.cols;
         self.rows
