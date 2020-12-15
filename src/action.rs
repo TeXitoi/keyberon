@@ -2,10 +2,12 @@
 
 use crate::key_code::KeyCode;
 
-/// The different types of actions we support for key macros
-#[non_exhaustive] // Definitely NOT exhaustive!  Let's add more! Mouse events maybe? :)
+/// The different types of actions we support for key sequences/macros
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum SequenceEvent {
+    /// No operation action: just do nothing (a placeholder).
+    NoOp,
     /// A keypress/keydown
     Press(KeyCode),
     /// Key release/keyup
@@ -14,10 +16,8 @@ pub enum SequenceEvent {
     Tap(KeyCode),
     /// For sequences that need to wait a bit before continuing
     Delay {
-        /// A delay (in ticks) to wait before executing the next SequenceEvent
-        since: u32,
-        /// Number of ticks to wait before removing the Delay
-        ticks: u32,
+        /// How long (in ticks) this Delay will last
+        duration: u32, // NOTE: This isn't a u16 because that's only max ~65 seconds (assuming 1000 ticks/sec)
     },
     /// A marker that indicates there's more of the macro than would fit
     /// in the 'sequenced' ArrayDeque
@@ -30,17 +30,6 @@ pub enum SequenceEvent {
     /// Cancels the running sequence and can be used to mark the end of a sequence
     /// instead of using a number of Release() events
     Complete,
-}
-
-impl SequenceEvent {
-    /// Returns the keycode associated with the given Press/Release event
-    pub fn keycode(&self) -> Option<KeyCode> {
-        match *self {
-            SequenceEvent::Press(keycode) => Some(keycode),
-            SequenceEvent::Release(keycode) => Some(keycode),
-            _ => None,
-        }
-    }
 }
 
 /// Behavior configuration of HoldTap.
@@ -136,7 +125,7 @@ where
         events: &'static [SequenceEvent],
     },
     /// Cancels any running sequences
-    CancelSequence,
+    CancelSequences,
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you
