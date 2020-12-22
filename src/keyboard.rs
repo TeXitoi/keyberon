@@ -51,6 +51,11 @@ impl<L> Keyboard<L> {
             true
         }
     }
+
+    /// Returns the underlying leds object.
+    pub fn leds_mut(&mut self) -> &mut L {
+        &mut self.leds
+    }
 }
 
 impl<L: Leds> HidDevice for Keyboard<L> {
