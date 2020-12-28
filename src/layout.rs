@@ -619,9 +619,13 @@ mod test {
 
     #[test]
     fn multiple_actions() {
+        const L1: Action = l(1);
+        const K_SHIFT: Action = k(LShift);
+        const KF: Action = k(F);
+        const KE: Action = k(E);
         static LAYERS: Layers = &[
-            &[&[MultipleActions(&[l(1), k(LShift)]), k(F)]],
-            &[&[Trans, k(E)]],
+            &[&[MultipleActions(&[L1, K_SHIFT]), KF]],
+            &[&[Trans, KE]],
         ];
         let mut layout = Layout::new(LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
