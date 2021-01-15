@@ -13,6 +13,7 @@ Breaking changes:
   example), manage a mouse emulation, or any other ideas you can
   have. As there is a default value for the type parameter, the update
   should be transparent.
+* Typo fix for MediaCoffee enum KeyCode.
 
 # v0.1.1
 
