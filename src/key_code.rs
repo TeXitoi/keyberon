@@ -252,7 +252,7 @@ pub enum KeyCode {
     MediaScrollDown,
     MediaEdit,
     MediaSleep,
-    MeidaCoffee,
+    MediaCoffee,
     MediaRefresh,
     MediaCalc, // 0xFB
 }
