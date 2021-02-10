@@ -42,6 +42,16 @@ impl Event {
         }
     }
 
+    /// Creats a push event from co-ordinates
+    pub fn press_from_coord((i, j): (u8, u8)) -> Event {
+        Event::Press(i, j)
+    }
+
+    /// Creats a release event from co-ordinates
+    pub fn release_from_coord((i, j): (u8, u8)) -> Event {
+        Event::Release(i, j)
+    }
+
     /// Transforms the coordinates of the event.
     ///
     /// # Example
