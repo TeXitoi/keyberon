@@ -1,6 +1,7 @@
 # v0.2.0
 
 * New Keyboard::leds_mut function for getting underlying leds object.
+* Made Layout::current_layer public for getting current active layer.
 
 Breaking changes:
 * Update to generic_array 0.14, that is exposed in matrix. The update
