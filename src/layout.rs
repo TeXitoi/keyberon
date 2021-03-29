@@ -393,7 +393,9 @@ impl<T: 'static> Layout<T> {
         }
         CustomEvent::NoEvent
     }
-    fn current_layer(&self) -> usize {
+
+    /// Obtain the index of the current active layer
+    pub fn current_layer(&self) -> usize {
         let mut iter = self.states.iter().filter_map(State::get_layer);
         let mut layer = match iter.next() {
             None => self.default_layer,
