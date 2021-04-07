@@ -56,6 +56,10 @@ keyboard (STM32F072 based).
 
 ![KeySeeBee](https://raw.githubusercontent.com/TeXitoi/keyseebee/master/images/keyseebee.jpg)
 
+[Arisu handwired](https://github.com/help-14/arisu-handwired) using STM32F401.
+
+![Arisu handwired](https://camo.githubusercontent.com/4fca994ac2b7c1b1874d4331c2428cac211ff80c2891c75c971d15630ef0a948/68747470733a2f2f692e696d6775722e636f6d2f30334c356f63702e6a7067)
+
 ## Features
 
 The supported features are:
