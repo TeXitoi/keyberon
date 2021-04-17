@@ -104,7 +104,7 @@ where
     V: ArrayLength<bool>,
     U: ArrayLength<GenericArray<bool, V>>,
 {
-    pub fn iter_pressed<'a>(&'a self) -> impl Iterator<Item = (usize, usize)> + Clone + 'a {
+    pub fn iter_pressed(&self) -> impl Iterator<Item = (usize, usize)> + Clone + '_ {
         self.0.iter().enumerate().flat_map(|(i, r)| {
             r.iter()
                 .enumerate()

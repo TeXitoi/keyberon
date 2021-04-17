@@ -138,9 +138,7 @@ impl<T: 'static> State<T> {
         }
     }
     fn tick(&self) -> Option<Self> {
-        match *self {
-            _ => Some(*self),
-        }
+        Some(*self)
     }
     fn release(&self, c: (u8, u8), custom: &mut CustomEvent<T>) -> Option<Self> {
         match *self {
@@ -212,10 +210,7 @@ impl<T> WaitingState<T> {
         }
     }
     fn is_corresponding_release(&self, event: &Event) -> bool {
-        match event {
-            Event::Release(i, j) if (*i, *j) == self.coord => true,
-            _ => false,
-        }
+        matches!(event, Event::Release(i, j) if (*i, *j) == self.coord)
     }
 }
 
@@ -247,7 +242,7 @@ impl<T: 'static> Layout<T> {
         }
     }
     /// Iterates on the key codes of the current state.
-    pub fn keycodes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
+    pub fn keycodes(&self) -> impl Iterator<Item = KeyCode> + '_ {
         self.states.iter().filter_map(State::keycode)
     }
     fn waiting_into_hold(&mut self) -> CustomEvent<T> {
@@ -276,7 +271,7 @@ impl<T: 'static> Layout<T> {
     ///
     /// Returns the corresponding `CustomEvent`, allowing to manage
     /// custom actions thanks to the `Action::Custom` variant.
-    pub fn tick<'a>(&'a mut self) -> CustomEvent<T> {
+    pub fn tick(&mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         match &mut self.waiting {
@@ -310,7 +305,7 @@ impl<T: 'static> Layout<T> {
         }
     }
     /// Register a key event.
-    pub fn event<'a>(&'a mut self, event: Event) {
+    pub fn event(&mut self, event: Event) {
         if let Some(stacked) = self.stacked.push_back(event.into()) {
             self.waiting_into_hold();
             self.unstack(stacked);
