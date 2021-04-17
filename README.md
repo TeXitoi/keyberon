@@ -66,15 +66,15 @@ The supported features are:
  - Layers when holding a key (aka the fn key). When holding multiple
    layer keys, the numbers add (if you have a layer 1 key and a layer
    2 key, when holding the 2 together, the layer 3 will be active).
- - Transparent key, i.e. when on a alternative layer, the key have the
-   same behavior of the default layer.
+ - Transparent key, i.e. when on an alternative layer, the key will
+   inherit the behavior of the default layer.
  - Change default layer dynamically.
- - Multiple keys send on an single key press. It allows to have keys
-   for complex shortcut, as a key for copy and paste, for alt tab, or
+ - Multiple keys sent on an single key press. It allows to have keys
+   for complex shortcut, for example a key for copy and paste or alt tab, or
    for whatever you want.
- - hold tap: different action depending if the key is holded or
+ - hold tap: different action depending if the key is held or
    tapped. For example, you can have a key acting as layer change when
-   holded, and space when tapped.
+   held, and space when tapped.
    
 
 ## FAQ

@@ -38,26 +38,26 @@ where
     /// Transparent, i.e. get the action from the default layer. On
     /// the default layer, it is equivalent to `NoOp`.
     Trans,
-    /// A key code, i.e. the classical key.
+    /// A key code, i.e. a classic key.
     KeyCode(KeyCode),
-    /// Multiple key codes send at the same time, as it you press all
-    /// these keys at the same time.  Useful to send shifted key, or
-    /// complex short cuts as Ctrl+Alt+Del in a single key press.
+    /// Multiple key codes sent at the same time, as if these keys
+    /// were pressed at the same time. Useful to send a shifted key,
+    /// or complex shortcuts like Ctrl+Alt+Del in a single key press.
     MultipleKeyCodes(&'static [KeyCode]),
-    /// Multiple actions send at the same time.
+    /// Multiple actions sent at the same time.
     MultipleActions(&'static [Action<T>]),
-    /// While pressed, change the current layer. That's the classical
+    /// While pressed, change the current layer. That's the classic
     /// Fn key. If several layer actions are active at the same time,
-    /// their number are summed. For example, if you press at the same
+    /// their numbers are summed. For example, if you press at the same
     /// time `Layer(1)` and `Layer(2)`, layer 3 will be active.
     Layer(usize),
     /// Change the default layer.
     DefaultLayer(usize),
-    /// If the key is hold more than `timeout` units of time (usually
+    /// If the key is held more than `timeout` ticks (usually
     /// milliseconds), performs the `hold` action, else performs the
     /// `tap` action.  Mostly used with a modifier for the hold action
-    /// and a classical key on the tap action. Any action can be
-    /// performed, but using a `HoldTap` in an `HoldTap` is not
+    /// and a normal key on the tap action. Any action can be
+    /// performed, but using a `HoldTap` in a `HoldTap` is not
     /// specified (but guaranteed to not crash).
     ///
     /// Different behaviors can be configured using the config field,
@@ -76,14 +76,14 @@ where
         config: HoldTapConfig,
         /// Configuration of the tap and hold holds the tap action.
         ///
-        /// If you press, release the key in such a configuration that
-        /// the tap behavior is done, and then press again the key in
-        /// less than `tap_hold_interval` ticks, the tap action will
-        /// be used. This allow to have a tap action holded by
-        /// "tap+hold" the key, allowing the computer to auto repeat
-        /// the tap behavior.
+        /// If you press and release the key in such a way that the tap
+        /// action is performed, and then press it again in less than
+        /// `tap_hold_interval` ticks, the tap action will
+        /// be held. This allows the tap action to be held by
+        /// pressing, releasing and holding the key, allowing the computer
+        //// to auto repeat the tap behavior.
         ///
-        /// To desactivate the functionnality, set this to 0.
+        /// To deactivate the functionality, set this to 0.
         ///
         /// Not implemented yet, to not have behavior change with an
         /// update, set this to 0.
@@ -106,7 +106,7 @@ impl<T> Action<T> {
         }
     }
     /// Returns an iterator on the `KeyCode` corresponding to the action.
-    pub fn key_codes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
+    pub fn key_codes(&self) -> impl Iterator<Item = KeyCode> + '_ {
         match self {
             Action::KeyCode(kc) => core::slice::from_ref(kc).iter().cloned(),
             Action::MultipleKeyCodes(kcs) => kcs.iter().cloned(),
