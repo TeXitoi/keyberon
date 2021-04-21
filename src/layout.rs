@@ -1,5 +1,50 @@
 //! Layout management.
 
+/// A procedural macro to generate [Layers](type.Layers.html)
+/// ## Syntax
+/// Items inside the macro are converted to Actions as such:
+/// - [`Action::KeyCode`]: Idents are automatically understood as keycodes: `A`, `RCtrl`, `Space`
+///     - Punctuation, numbers and other literals that aren't special to the rust parser are converted
+///       to KeyCodes as well: `,` becomes `KeyCode::Commma`, `2` becomes `KeyCode::Kb2`, `/` becomes `KeyCode::Slash`
+///     - Characters which require shifted keys are converted to `Action::MultipleKeyCodes(&[LShift, <character>])`:
+///       `!` becomes `Action::MultipleKeyCodes(&[LShift, Kb1])` etc
+///     - Characters special to the rust parser (parentheses, brackets, braces, quotes, apostrophes, underscores, backslashes and backticks)
+///       left alone cause parsing errors and as such have to be enclosed by apostrophes: `'['` becomes `KeyCode::LBracket`,
+///       `'\''` becomes `KeyCode::Quote`, `'\\'` becomes `KeyCode::BSlash`
+/// - [`Action::NoOp`]: Lowercase `n`
+/// - [`Action::Trans`]: Lowercase `t`
+/// - [`Action::Layer`]: A number in parentheses: `(1)`, `(4 - 2)`, `(0x4u8 as usize)`
+/// - [`Action::MultipleActions`]: Actions in brackets: `[LCtrl S]`, `[LAlt LCtrl C]`, `[(2) B {Action::NoOp}]`
+/// - Other `Action`s: anything in braces (`{}`) is copied unchanged to the final layout - `{ Action::Custom(42) }`
+///   simply becomes `Action::Custom(42)`
+///
+/// **Important note**: comma (`,`) is a keycode on its own, and can't be used to separate keycodes as one would have
+/// to do when not using a macro.
+///
+/// ## Usage example:
+/// Example layout for a 4x12 split keyboard:
+/// ```
+/// use keyberon::action::Action;
+/// static DLAYER: Action = Action::DefaultLayer(5);
+///
+/// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
+///     {
+///         [ Tab    Q W E R T   Y U I O P BSpace ]
+///         [ LCtrl  A S D F G   H J K L ; Quote  ]
+///         [ LShift Z X C V B   N M , . / Escape ]
+///         [ n n LGui {DLAYER} Space Escape   BSpace Enter (1) RAlt n n ]
+///     }
+///     {
+///         [ Tab    1 2 3 4 5   6 7 8 9 0 BSpace  ]
+///         [ LCtrl  ! @ # $ %   ^ & * '(' ')' - = ]
+///         [ LShift n n n n n   n n n n n [LAlt A]]
+///         [ n n LGui (2) t t   t t t RAlt n n    ]
+///     }
+///     // ...
+/// };
+/// ```
+pub use layout_macro::layout;
+
 use crate::action::{Action, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
