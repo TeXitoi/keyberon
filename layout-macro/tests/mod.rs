@@ -1,11 +1,10 @@
 extern crate layout_macro;
-use layout_macro::layout;
-use keyberon::action::{Action, k, l, m, HoldTapConfig, Action::*};
+use keyberon::action::{k, l, m, Action, Action::*, HoldTapConfig};
 use keyberon::key_code::KeyCode::*;
+use layout_macro::layout;
 
 #[test]
 fn test_layout_equality() {
-
     macro_rules! s {
         ($k:expr) => {
             m(&[LShift, $k])
@@ -63,11 +62,10 @@ fn test_nesting() {
             [{k(D)} [(5) [C {k(D)}]]]
         }
     };
-    static B: keyberon::layout::Layers = &[
-        &[
-            &[k(D), Action::MultipleActions(&[Action::Layer(5), Action::MultipleActions(&[k(C), k(D)])])]
-        ]
-    ];
+    static B: keyberon::layout::Layers = &[&[&[
+        k(D),
+        Action::MultipleActions(&[Action::Layer(5), Action::MultipleActions(&[k(C), k(D)])]),
+    ]]];
     assert_eq!(A, B);
 }
 
