@@ -164,12 +164,14 @@ fn literal_to_keycode(l: &Literal, out: &mut TokenStream) {
         // Char literals; mostly punctuation which can't be properly tokenized alone
         '\'' => {
             match repr.chars().nth(1).unwrap() {
-                '\\' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Bslash), }),
+                '\\' => match repr.chars().nth(2).unwrap() {
+                    '\\' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Bslash), }),
+                    '\'' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Quote), }),
+                    _ => emit_error!(l, "Literal could not be parsed as a keycode"; help = "Maybe try without quotes?")
+                }
                 '[' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::LBracket), }),
                 ']' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::RBracket), }),
-
                 '`' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Grave), }),
-                '\'' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Quote), }),
                 '"' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Quote]), }),
                 '(' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb9]), }),
                 ')' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb0]), }),
