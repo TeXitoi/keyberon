@@ -43,7 +43,7 @@
 ///     // ...
 /// };
 /// ```
-pub use layout_macro::layout;
+pub use keyberon_macros::*;
 
 use crate::action::{Action, HoldTapConfig};
 use crate::key_code::KeyCode;

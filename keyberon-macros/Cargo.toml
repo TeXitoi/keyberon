@@ -1,5 +1,5 @@
 [package]
-name = "layout-macro"
+name = "keyberon-macros"
 version = "0.1.0"
 authors = ["Antoni Simka <antonisimka.8@gmail.com>"]
 edition = "2018"

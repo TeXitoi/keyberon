@@ -1,7 +1,7 @@
-extern crate layout_macro;
+extern crate keyberon_macros;
 use keyberon::action::{k, l, m, Action, Action::*, HoldTapConfig};
 use keyberon::key_code::KeyCode::*;
-use layout_macro::layout;
+use keyberon_macros::layout;
 
 #[test]
 fn test_layout_equality() {
@@ -76,4 +76,15 @@ fn test_layer_switch() {
             [(0xa), (0b0110), (b'a' as usize), (1 + 8 & 32), ([4,5][0])]
         }
     };
+}
+
+#[test]
+fn test_escapes() {
+    static A: keyberon::layout::Layers = layout! {
+        {
+            ['\\' '\'']
+        }
+    };
+    static B: keyberon::layout::Layers = &[&[&[k(Bslash), k(Quote)]]];
+    assert_eq!(A, B);
 }
