@@ -1,6 +1,51 @@
 //! Layout management.
 
-use crate::action::{Action, HoldTapConfig, SequenceEvent};
+/// A procedural macro to generate [Layers](type.Layers.html)
+/// ## Syntax
+/// Items inside the macro are converted to Actions as such:
+/// - [`Action::KeyCode`]: Idents are automatically understood as keycodes: `A`, `RCtrl`, `Space`
+///     - Punctuation, numbers and other literals that aren't special to the rust parser are converted
+///       to KeyCodes as well: `,` becomes `KeyCode::Commma`, `2` becomes `KeyCode::Kb2`, `/` becomes `KeyCode::Slash`
+///     - Characters which require shifted keys are converted to `Action::MultipleKeyCodes(&[LShift, <character>])`:
+///       `!` becomes `Action::MultipleKeyCodes(&[LShift, Kb1])` etc
+///     - Characters special to the rust parser (parentheses, brackets, braces, quotes, apostrophes, underscores, backslashes and backticks)
+///       left alone cause parsing errors and as such have to be enclosed by apostrophes: `'['` becomes `KeyCode::LBracket`,
+///       `'\''` becomes `KeyCode::Quote`, `'\\'` becomes `KeyCode::BSlash`
+/// - [`Action::NoOp`]: Lowercase `n`
+/// - [`Action::Trans`]: Lowercase `t`
+/// - [`Action::Layer`]: A number in parentheses: `(1)`, `(4 - 2)`, `(0x4u8 as usize)`
+/// - [`Action::MultipleActions`]: Actions in brackets: `[LCtrl S]`, `[LAlt LCtrl C]`, `[(2) B {Action::NoOp}]`
+/// - Other `Action`s: anything in braces (`{}`) is copied unchanged to the final layout - `{ Action::Custom(42) }`
+///   simply becomes `Action::Custom(42)`
+///
+/// **Important note**: comma (`,`) is a keycode on its own, and can't be used to separate keycodes as one would have
+/// to do when not using a macro.
+///
+/// ## Usage example:
+/// Example layout for a 4x12 split keyboard:
+/// ```
+/// use keyberon::action::Action;
+/// static DLAYER: Action = Action::DefaultLayer(5);
+///
+/// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
+///     {
+///         [ Tab    Q W E R T   Y U I O P BSpace ]
+///         [ LCtrl  A S D F G   H J K L ; Quote  ]
+///         [ LShift Z X C V B   N M , . / Escape ]
+///         [ n n LGui {DLAYER} Space Escape   BSpace Enter (1) RAlt n n ]
+///     }
+///     {
+///         [ Tab    1 2 3 4 5   6 7 8 9 0 BSpace  ]
+///         [ LCtrl  ! @ # $ %   ^ & * '(' ')' - = ]
+///         [ LShift n n n n n   n n n n n [LAlt A]]
+///         [ n n LGui (2) t t   t t t RAlt n n    ]
+///     }
+///     // ...
+/// };
+/// ```
+pub use keyberon_macros::*;
+
+use crate::action::{Action, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::consts::U64;
@@ -260,7 +305,7 @@ impl<T: 'static> Layout<T> {
         }
     }
     /// Iterates on the key codes of the current state.
-    pub fn keycodes<'a>(&'a self) -> impl Iterator<Item = KeyCode> + 'a {
+    pub fn keycodes(&self) -> impl Iterator<Item = KeyCode> + '_ {
         self.states.iter().filter_map(State::keycode)
     }
     fn waiting_into_hold(&mut self) -> CustomEvent<T> {
@@ -289,7 +334,7 @@ impl<T: 'static> Layout<T> {
     ///
     /// Returns the corresponding `CustomEvent`, allowing to manage
     /// custom actions thanks to the `Action::Custom` variant.
-    pub fn tick<'a>(&'a mut self) -> CustomEvent<T> {
+    pub fn tick(&mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         self.process_sequences();
@@ -402,7 +447,7 @@ impl<T: 'static> Layout<T> {
         }
     }
     /// Register a key event.
-    pub fn event<'a>(&'a mut self, event: Event) {
+    pub fn event(&mut self, event: Event) {
         if let Some(stacked) = self.stacked.push_back(event.into()) {
             self.waiting_into_hold();
             self.unstack(stacked);
@@ -509,7 +554,9 @@ impl<T: 'static> Layout<T> {
         }
         CustomEvent::NoEvent
     }
-    fn current_layer(&self) -> usize {
+
+    /// Obtain the index of the current active layer
+    pub fn current_layer(&self) -> usize {
         let mut iter = self.states.iter().filter_map(State::get_layer);
         let mut layer = match iter.next() {
             None => self.default_layer,

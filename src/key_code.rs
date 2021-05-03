@@ -252,20 +252,20 @@ pub enum KeyCode {
     MediaScrollDown,
     MediaEdit,
     MediaSleep,
-    MeidaCoffee,
+    MediaCoffee,
     MediaRefresh,
     MediaCalc, // 0xFB
 }
 
 impl KeyCode {
-    /// Returns `true` if the key code correspond to a modifier (send
-    /// separately on USB HID report).
+    /// Returns `true` if the key code corresponds to a modifier (sent
+    /// separately on the USB HID report).
     pub fn is_modifier(self) -> bool {
         KeyCode::LCtrl <= self && self <= KeyCode::RGui
     }
 
     /// Returns the byte with the bit corresponding to the USB HID
-    /// modifier bitfield setted.
+    /// modifier bitfield set.
     pub fn as_modifier_bit(self) -> u8 {
         if self.is_modifier() {
             1 << (self as u8 - KeyCode::LCtrl as u8)
@@ -301,7 +301,7 @@ impl KbHidReport {
     }
 
     /// Add the given key code to the report. If the report is full,
-    /// it will be setted to `ErrorRollOver`.
+    /// it will be set to `ErrorRollOver`.
     pub fn pressed(&mut self, kc: KeyCode) {
         use KeyCode::*;
         match kc {

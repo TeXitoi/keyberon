@@ -12,6 +12,7 @@ license = "MIT"
 readme = "README.md"
 
 [dependencies]
+keyberon-macros = { version = "0.1.0", path = "./keyberon-macros" }
 either = { version = "1.6", default-features = false }
 generic-array = "0.14"
 embedded-hal = { version = "0.2", features = ["unproven"] }
