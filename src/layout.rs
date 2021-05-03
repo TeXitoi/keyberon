@@ -45,7 +45,7 @@
 /// ```
 pub use keyberon_macros::*;
 
-use crate::action::{Action, HoldTapConfig};
+use crate::action::{Action, HoldTapConfig, SequenceEvent};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::consts::U64;
