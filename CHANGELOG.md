@@ -3,6 +3,7 @@
 * New Keyboard::leds_mut function for getting underlying leds object.
 * Made Layout::current_layer public for getting current active layer.
 * Added a procedural macro for defining layouts (`keyberon::layout::layout`)
+* Corrected HID report descriptor
 
 Breaking changes:
 * Update to generic_array 0.14, which is exposed in matrix. The update
