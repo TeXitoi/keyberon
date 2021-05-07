@@ -86,6 +86,8 @@ pub trait HidDevice {
 
     fn protocol(&self) -> Protocol;
 
+    fn max_packet_size(&self) -> u16;
+
     fn report_descriptor(&self) -> &[u8];
 
     fn set_report(&mut self, report_type: ReportType, report_id: u8, data: &[u8])
@@ -103,10 +105,11 @@ pub struct HidClass<'a, B: UsbBus, D: HidDevice> {
 
 impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
     pub fn new(device: D, alloc: &UsbBusAllocator<B>) -> HidClass<'_, B, D> {
+        let max_packet_size = device.max_packet_size();
         HidClass {
             device,
             interface: alloc.interface(),
-            endpoint_interrupt_in: alloc.interrupt(8, 10),
+            endpoint_interrupt_in: alloc.interrupt(max_packet_size, 10),
             expect_interrupt_in_complete: false,
         }
     }

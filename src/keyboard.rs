@@ -95,6 +95,10 @@ impl<L: Leds> HidDevice for Keyboard<L> {
         Protocol::Keyboard
     }
 
+    fn max_packet_size(&self) -> u16 {
+        8
+    }
+
     fn report_descriptor(&self) -> &[u8] {
         REPORT_DESCRIPTOR
     }
