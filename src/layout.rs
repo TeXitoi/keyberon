@@ -421,9 +421,7 @@ impl<T: 'static> Layout<T> {
                 let _ = self.states.push(LayerModifier { value, coord });
             }
             DefaultLayer(value) => {
-                if *value < self.layers.len() {
-                    self.default_layer = *value
-                }
+                self.set_default_layer(*value);
             }
             Custom(value) => {
                 if self.states.push(State::Custom { value, coord }).is_ok() {
@@ -445,6 +443,13 @@ impl<T: 'static> Layout<T> {
             layer += l;
         }
         layer
+    }
+
+    /// Sets the default layer for the layout
+    pub fn set_default_layer(&mut self, value: usize) {
+        if value < self.layers.len() {
+            self.default_layer = value
+        }
     }
 }
 
