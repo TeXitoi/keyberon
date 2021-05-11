@@ -5,6 +5,7 @@
 * Added a procedural macro for defining layouts (`keyberon::layout::layout`)
 * Corrected HID report descriptor
 * Add max_packet_size() to HidDevice to allow differing report sizes
+* Allows default layer to be set on a Layout externally
 
 Breaking changes:
 * Update to generic_array 0.14, which is exposed in matrix. The update
