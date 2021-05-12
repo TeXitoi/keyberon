@@ -19,6 +19,7 @@ use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
 
 pub mod action;
+pub mod chording;
 pub mod debounce;
 pub mod hid;
 pub mod key_code;
