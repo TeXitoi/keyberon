@@ -1,6 +1,36 @@
-//! The different actions that can be done.
+//! The different actions that can be executed via any given key.
 
 use crate::key_code::KeyCode;
+
+/// The different types of actions we support for key sequences/macros
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum SequenceEvent {
+    /// No operation action: just do nothing (a placeholder).
+    NoOp,
+    /// A keypress/keydown
+    Press(KeyCode),
+    /// Key release/keyup
+    Release(KeyCode),
+    /// A shortcut for `Press(KeyCode), Release(KeyCode)`
+    Tap(KeyCode),
+    /// For sequences that need to wait a bit before continuing
+    Delay {
+        /// How long (in ticks) this Delay will last
+        duration: u32, // NOTE: This isn't a u16 because that's only max ~65 seconds (assuming 1000 ticks/sec)
+    },
+    /// A marker that indicates there's more of the macro than would fit
+    /// in the 'sequenced' ArrayDeque
+    Continue {
+        /// The current chunk
+        index: usize,
+        /// The full list of Sequence Events (that aren't Continue())
+        events: &'static [SequenceEvent],
+    },
+    /// Cancels the running sequence and can be used to mark the end of a sequence
+    /// instead of using a number of Release() events
+    Complete,
+}
 
 /// Behavior configuration of HoldTap.
 #[non_exhaustive]
@@ -89,6 +119,13 @@ where
         /// update, set this to 0.
         tap_hold_interval: u16,
     },
+    /// A sequence of SequenceEvents
+    Sequence {
+        /// An array of SequenceEvents that will be triggered (in order)
+        events: &'static [SequenceEvent],
+    },
+    /// Cancels any running sequences
+    CancelSequences,
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you
