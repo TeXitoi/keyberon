@@ -48,7 +48,6 @@ pub use keyberon_macros::*;
 use crate::action::{Action, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
-use heapless::consts::U64;
 use heapless::Vec;
 
 use State::*;
@@ -70,7 +69,7 @@ where
 {
     layers: Layers<T>,
     default_layer: usize,
-    states: Vec<State<T>, U64>,
+    states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
     stacked: Stack,
 }
