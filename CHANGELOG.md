@@ -8,8 +8,8 @@
 * Allows default layer to be set on a Layout externally
 
 Breaking changes:
-* Update to generic_array 0.14, which is exposed in matrix. The update
-  should be transparent.
+* Row and Column pins are now a simple array. For the STM32 MCU, you
+  should now use `.downgrade()` to have an homogenous array. 
 * `Action::HoldTap` now takes a configuration for different behaviors.
 * `Action::HoldTap` now takes the `tap_hold_interval` field. Not
   implemented yet.
