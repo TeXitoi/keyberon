@@ -48,7 +48,6 @@ pub use keyberon_macros::*;
 use crate::action::{Action, HoldTapConfig, SequenceEvent};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
-use heapless::consts::U64;
 use heapless::Vec;
 
 use State::*;
@@ -70,7 +69,7 @@ where
 {
     layers: Layers<T>,
     default_layer: usize,
-    states: Vec<State<T>, U64>,
+    states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
     stacked: Stack,
     active_sequences: ArrayDeque<[SequenceState; 4], arraydeque::behavior::Wrapping>,
@@ -542,9 +541,7 @@ impl<T: 'static> Layout<T> {
                 let _ = self.states.push(LayerModifier { value, coord });
             }
             DefaultLayer(value) => {
-                if *value < self.layers.len() {
-                    self.default_layer = *value
-                }
+                self.set_default_layer(*value);
             }
             Custom(value) => {
                 if self.states.push(State::Custom { value, coord }).is_ok() {
@@ -566,6 +563,13 @@ impl<T: 'static> Layout<T> {
             layer += l;
         }
         layer
+    }
+
+    /// Sets the default layer for the layout
+    pub fn set_default_layer(&mut self, value: usize) {
+        if value < self.layers.len() {
+            self.default_layer = value
+        }
     }
 }
 
