@@ -18,3 +18,4 @@ embedded-hal = { version = "0.2", features = ["unproven"] }
 usb-device = "0.2"
 heapless = "0.7"
 arraydeque = { version = "0.4.5", default-features = false }
+bitvec = "0.20"
