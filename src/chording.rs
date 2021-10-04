@@ -106,9 +106,7 @@ impl Chord {
                 }
                 if self.in_progress && self.keys_pressed.iter().all(|&k| !k) {
                     self.in_progress = false;
-                    for k in self.keys_pressed.iter_mut() {
-                        *k = false;
-                    }
+                    self.keys_pressed.iter_mut().for_each(|k| *k = false);
                     return Some(Event::release_from_coord(self.def.result));
                 }
             }
