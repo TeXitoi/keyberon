@@ -432,16 +432,13 @@ impl<T: 'static> Layout<T> {
     }
 
     /// Obtain the index of the current active layer
-    pub fn current_layer(&self) -> usize {
-        let mut iter = self.states.iter().filter_map(State::get_layer);
-        let mut layer = match iter.next() {
-            None => self.default_layer,
-            Some(l) => l,
-        };
-        for l in iter {
-            layer += l;
-        }
-        layer
+    fn current_layer(&self) -> usize {
+        self.states
+            .iter()
+            .rev()
+            .filter_map(State::get_layer)
+            .next()
+            .unwrap_or(self.default_layer)
     }
 
     /// Sets the default layer for the layout
@@ -705,6 +702,69 @@ mod test {
         // release custom
         layout.event(Release(0, 0));
         assert_eq!(CustomEvent::Release(&42), layout.tick());
+        assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn multiple_layers() {
+        static LAYERS: Layers = &[
+            &[&[l(1), l(2)]],
+            &[&[k(A), l(3)]],
+            &[&[l(0), k(B)]],
+            &[&[k(C), k(D)]],
+        ];
+        let mut layout = Layout::new(LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(0, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+
+        // press L1
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(1, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // press L3 on L1
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(3, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // release L1, still on l3
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(3, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // press and release C on L3
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[C], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        // release L3, back to L0
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(0, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+
+        // back to empty, going to L2
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(2, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // and press the L0 key on L2
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(0, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // release the L0, back to L2
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(2, layout.current_layer());
+        assert_keys(&[], layout.keycodes());
+        // release the L2, back to L0
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());
     }
 }
