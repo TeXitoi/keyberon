@@ -1,10 +1,20 @@
-//! Provides chord support for two keys pressed at once.
-//! E.g. Left + Right arrow at the same time => paste.
+//! Provides chord support for emulating a single layout event
+//! from multiple key presses. The single event press is triggered
+//! once all the keys of the chord have been pressed and the chord
+//! is released once all of the keys of the chord have been released.
+//!
+//! The chording tick should be used after debouncing, where
+//! the debounce period determines the period in which all keys
+//! need to be pressed to trigger the chord.
+//!
+//! You must use a virtual row/area of your layout to
+//! define the result of the chord if the desired result is
+//! not already on the layer that you want to use the chord on.
 
 /// ## Usage
 /// ``` no_run
 /// use keyberon::chording::{Chording, ChordDef};
-/// use keyberon::layout::{Layout, Event::*};
+/// use keyberon::layout::{Layout, Event::*, Event};
 /// use keyberon::debounce::Debouncer;
 /// use keyberon::matrix::{Matrix, PressedKeys};
 ///
@@ -27,26 +37,29 @@
 /// // the rest of this example should be called inside a callback
 /// // The PressedKeys are normall determined by calling the matrix
 /// let keys_pressed = PressedKeys([[true, true, false]]);
-/// let events = chording.tick(debouncer.events(keys_pressed).collect()).into_iter();
-///
-/// events.for_each(|e| layout.event(e));
+/// let event = chording
+///     .tick(debouncer.events(keys_pressed).collect())
+///     .into_iter()
+///     .last();
+/// assert_eq!(event, Some(Event::Press(0, 2)));
+/// layout.event(event.unwrap());
 /// ```
 use crate::layout::Event;
 use heapless::Vec;
 
 type KeyPosition = (u8, u8);
 
-/// KeyA + KeyB = KeyC
-/// (For custom actions KeyC could be a virtual key off to the side and then mapped to actions via layers.)
+/// Description of the virtual key corresponding to a given chord.
+/// keys are the coordinates of the multiple keys that make up the chord
+/// result is the outcome of the keys being pressed
 #[derive(Clone)]
 pub struct ChordDef {
     keys: &'static [KeyPosition],
     result: KeyPosition,
 }
 
-/// Warning: Chording home mod keys can leave the mod on.
 impl ChordDef {
-    /// Create new chord
+    /// Creates new chord
     pub const fn new(result: KeyPosition, keys: &'static [KeyPosition]) -> Self {
         Self { keys, result }
     }
@@ -54,7 +67,7 @@ impl ChordDef {
 
 /// Runtime data for a chord
 #[derive(Clone)]
-pub struct Chord {
+struct Chord {
     def: &'static ChordDef,
     in_progress: bool,
     keys_pressed: Vec<bool, 8>,
@@ -66,25 +79,24 @@ impl Chord {
         let mut me = Self {
             def,
             in_progress: false,
-            keys_pressed: Vec::<bool, 8>::new(),
+            keys_pressed: Vec::new(),
         };
-        me.in_progress = false;
-        def.keys
-            .iter()
-            .for_each(|_| me.keys_pressed.push(false).unwrap());
+        for _ in def.keys {
+            me.keys_pressed.push(false).unwrap()
+        }
         me
     }
 
     fn process(&mut self, event: Event) -> Option<Event> {
         match event {
-            e @ Event::Press(_, _) => {
+            Event::Press(_, _) => {
                 if !self.in_progress {
                     for (k, _) in self
                         .def
                         .keys
                         .iter()
                         .enumerate()
-                        .filter(|(_, key)| **key == e.coord())
+                        .filter(|(_, key)| **key == event.coord())
                     {
                         self.keys_pressed[k] = true;
                     }
@@ -94,13 +106,13 @@ impl Chord {
                     }
                 }
             }
-            e @ Event::Release(_, _) => {
+            Event::Release(_, _) => {
                 for (k, _) in self
                     .def
                     .keys
                     .iter()
                     .enumerate()
-                    .filter(|(_, key)| **key == e.coord())
+                    .filter(|(_, key)| **key == event.coord())
                 {
                     self.keys_pressed[k] = false;
                 }
