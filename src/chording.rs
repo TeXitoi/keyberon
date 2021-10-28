@@ -22,7 +22,7 @@
 /// // that correspond to a single location in the layout
 /// const CHORDS: [ChordDef; 2] = [
 ///     ((0, 2), &[(0, 0), (0, 1)]),
-///     ((0, 0), &[(0, 1), (0, 2)])
+///     ((0, 0), &[(0, 1), (0, 2)]),
 /// ];
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
@@ -71,7 +71,7 @@ struct Chord {
 
 impl Chord {
     /// Create new chord from user data.
-    pub fn new(def: &'static ChordDef) -> Self {
+    fn new(def: &'static ChordDef) -> Self {
         let mut me = Self {
             def,
             in_progress: false,
@@ -124,15 +124,15 @@ impl Chord {
 }
 
 /// Two keys at once!
-pub struct Chording {
+pub struct Chording<const N: usize> {
     /// Defined chords
-    chords: Vec<Chord, 16>,
+    chords: Vec<Chord, N>,
 }
 
-impl Chording {
+impl<const N: usize> Chording<N> {
     /// Take the predefined chord list in.
-    pub fn new(chords: &'static [ChordDef]) -> Self {
-        let mut v = Vec::<Chord, 16>::new();
+    pub fn new(chords: &'static [ChordDef; N]) -> Self {
+        let mut v = Vec::<Chord, N>::new();
         for ch in chords {
             v.push(Chord::new(ch)).ok().unwrap();
         }
@@ -228,5 +228,39 @@ mod test {
         second_release.push(Release(0, 1)).ok();
         // once all keys of the combo are released, the combo is released
         assert_eq!(chording.tick(second_release), &[Release(0, 2)]);
+    }
+
+    #[test]
+    fn chord_overlap_press_release() {
+        const CHORDS: [ChordDef; 3] = [
+            ((1, 0), &[(0, 0), (0, 1), (0, 2)]),
+            ((1, 1), &[(0, 0), (0, 1)]),
+            ((1, 2), &[(0, 1), (0, 2)]),
+        ];
+        let mut chording = Chording::new(&CHORDS);
+
+        // Triple press chord is composed of the two keys that make their
+        // own unique chord. Only the three key chord should be triggered
+        let mut triple_press = Vec::<Event, 8>::new();
+        triple_press.push(Press(0, 0)).ok();
+        triple_press.push(Press(0, 1)).ok();
+        triple_press.push(Press(0, 2)).ok();
+        assert_eq!(chording.tick(triple_press), &[Press(1, 0)]);
+        let mut triple_release = Vec::<Event, 8>::new();
+        triple_release.push(Release(0, 0)).ok();
+        triple_release.push(Release(0, 1)).ok();
+        triple_release.push(Release(0, 2)).ok();
+        assert_eq!(chording.tick(triple_release), &[Release(1, 0)]);
+
+        // Verifying that the double key chord is pressed and released and not
+        // stalled by the overlapping three key chord
+        let mut double_press = Vec::<Event, 8>::new();
+        double_press.push(Press(0, 0)).ok();
+        double_press.push(Press(0, 1)).ok();
+        assert_eq!(chording.tick(double_press), &[Press(1, 1)]);
+        let mut double_release = Vec::<Event, 8>::new();
+        double_release.push(Release(0, 0)).ok();
+        double_release.push(Release(0, 1)).ok();
+        assert_eq!(chording.tick(double_release), &[Release(1, 1)]);
     }
 }
