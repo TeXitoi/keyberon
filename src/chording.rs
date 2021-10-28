@@ -262,5 +262,22 @@ mod test {
         double_release.push(Release(0, 0)).ok();
         double_release.push(Release(0, 1)).ok();
         assert_eq!(chording.tick(double_release), &[Release(1, 1)]);
+
+        // If a three key chord has not been fully released, the released keys
+        // that form another chord should still work to press and release the
+        // two key chord
+        let mut triple_press = Vec::<Event, 8>::new();
+        triple_press.push(Press(0, 0)).ok();
+        triple_press.push(Press(0, 1)).ok();
+        triple_press.push(Press(0, 2)).ok();
+        assert_eq!(chording.tick(triple_press), &[Press(1, 0)]);
+        let mut half_triple_release = Vec::<Event, 8>::new();
+        half_triple_release.push(Release(0, 1)).ok();
+        half_triple_release.push(Release(0, 2)).ok();
+        assert_eq!(chording.tick(half_triple_release), &[]);
+        let mut double_press = Vec::<Event, 8>::new();
+        double_press.push(Press(0, 1)).ok();
+        double_press.push(Press(0, 2)).ok();
+        assert_eq!(chording.tick(double_press), &[Press(1, 2)]);
     }
 }
