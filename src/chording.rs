@@ -12,7 +12,7 @@
 //! not already on the layer that you want to use the chord on.
 
 /// ## Usage
-/// ``` no_run
+/// ```
 /// use keyberon::chording::{Chording, ChordDef};
 /// use keyberon::layout::{Layout, Event::*, Event};
 /// use keyberon::debounce::Debouncer;
@@ -20,9 +20,11 @@
 ///
 /// // The chord is defined by two or more locations in the layout
 /// // that correspond to a single location in the layout
-/// const CHORD0: ChordDef = ChordDef::new((0, 2), &[(0, 0), (0, 1)]);
-/// const CHORD1: ChordDef = ChordDef::new((0, 0), &[(0, 1), (0, 2)]);
-/// const CHORDS: [ChordDef; 2] = [CHORD0, CHORD1];
+/// const CHORDS: [ChordDef; 2] = [
+///     ((0, 2), &[(0, 0), (0, 1)]),
+///     ((0, 0), &[(0, 1), (0, 2)])
+/// ];
+/// const DEBOUNCE_COUNT: u16 = 30;
 ///
 /// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
 ///     { [ A B C ] }
@@ -31,18 +33,23 @@
 /// let mut layout = Layout::new(LAYERS);
 /// // Debouncer period determines chording timeout
 /// let mut debouncer: Debouncer<PressedKeys<3, 1>> =
-///     Debouncer::new(PressedKeys::default(), PressedKeys::default(), 30);
+///     Debouncer::new(PressedKeys::default(), PressedKeys::default(), DEBOUNCE_COUNT);
 /// let mut chording = Chording::new(&CHORDS);
 ///
 /// // the rest of this example should be called inside a callback
-/// // The PressedKeys are normall determined by calling the matrix
-/// let keys_pressed = PressedKeys([[true, true, false]]);
-/// let event = chording
-///     .tick(debouncer.events(keys_pressed).collect())
-///     .into_iter()
-///     .last();
-/// assert_eq!(event, Some(Event::Press(0, 2)));
+/// // The PressedKeys are normally determined by calling the matrix
+/// // and the for loop is just to get past the debouncer
+/// for _ in 0..DEBOUNCE_COUNT {
+///     assert_eq!(0, debouncer.events(PressedKeys([[true, true, false]])).count());
+/// }
+/// let mut events = chording
+///     .tick(debouncer.events(PressedKeys([[true, true, false]])).collect())
+///     .into_iter();
+/// let event = events.next();
+/// assert_eq!(Some(Event::Press(0, 2)), event);
 /// layout.event(event.unwrap());
+/// let event = events.next();
+/// assert_eq!(None, event);
 /// ```
 use crate::layout::Event;
 use heapless::Vec;
@@ -52,18 +59,7 @@ type KeyPosition = (u8, u8);
 /// Description of the virtual key corresponding to a given chord.
 /// keys are the coordinates of the multiple keys that make up the chord
 /// result is the outcome of the keys being pressed
-#[derive(Clone)]
-pub struct ChordDef {
-    keys: &'static [KeyPosition],
-    result: KeyPosition,
-}
-
-impl ChordDef {
-    /// Creates new chord
-    pub const fn new(result: KeyPosition, keys: &'static [KeyPosition]) -> Self {
-        Self { keys, result }
-    }
-}
+pub type ChordDef = (KeyPosition, &'static [KeyPosition]);
 
 /// Runtime data for a chord
 #[derive(Clone)]
@@ -81,7 +77,7 @@ impl Chord {
             in_progress: false,
             keys_pressed: Vec::new(),
         };
-        for _ in def.keys {
+        for _ in def.1 {
             me.keys_pressed.push(false).unwrap()
         }
         me
@@ -93,7 +89,7 @@ impl Chord {
                 if !self.in_progress {
                     for (k, _) in self
                         .def
-                        .keys
+                        .1
                         .iter()
                         .enumerate()
                         .filter(|(_, key)| **key == event.coord())
@@ -102,14 +98,14 @@ impl Chord {
                     }
                     if self.keys_pressed.iter().all(|&k| k) {
                         self.in_progress = true;
-                        return Some(Event::press_from_coord(self.def.result));
+                        return Some(Event::press_from_coord(self.def.0));
                     }
                 }
             }
             Event::Release(_, _) => {
                 for (k, _) in self
                     .def
-                    .keys
+                    .1
                     .iter()
                     .enumerate()
                     .filter(|(_, key)| **key == event.coord())
@@ -119,7 +115,7 @@ impl Chord {
                 if self.in_progress && self.keys_pressed.iter().all(|&k| !k) {
                     self.in_progress = false;
                     self.keys_pressed.iter_mut().for_each(|k| *k = false);
-                    return Some(Event::release_from_coord(self.def.result));
+                    return Some(Event::release_from_coord(self.def.0));
                 }
             }
         }
@@ -154,20 +150,13 @@ impl Chording {
                 for chord in self.chords.iter_mut() {
                     match chord.process(event) {
                         Some(e @ Event::Press(_, _)) => {
-                            vec_remove.extend(
-                                chord.def.keys.iter().copied().map(Event::press_from_coord),
-                            );
+                            vec_remove
+                                .extend(chord.def.1.iter().copied().map(Event::press_from_coord));
                             return e;
                         }
                         Some(e @ Event::Release(_, _)) => {
-                            vec_remove.extend(
-                                chord
-                                    .def
-                                    .keys
-                                    .iter()
-                                    .copied()
-                                    .map(Event::release_from_coord),
-                            );
+                            vec_remove
+                                .extend(chord.def.1.iter().copied().map(Event::release_from_coord));
                             return e;
                         }
                         None => {}
@@ -192,8 +181,8 @@ mod test {
 
     #[test]
     fn single_press_release() {
-        const CHORD: ChordDef = ChordDef::new((0, 2), &[(0, 0), (0, 1)]);
-        let mut chording = Chording::new(&[CHORD]);
+        const CHORDS: [ChordDef; 1] = [((0, 2), &[(0, 0), (0, 1)])];
+        let mut chording = Chording::new(&CHORDS);
 
         // Verify a single press goes through chording unchanged
         let mut single_press = Vec::<Event, 8>::new();
@@ -206,8 +195,8 @@ mod test {
 
     #[test]
     fn chord_press_release() {
-        const CHORD: ChordDef = ChordDef::new((0, 2), &[(0, 0), (0, 1)]);
-        let mut chording = Chording::new(&[CHORD]);
+        const CHORDS: [ChordDef; 1] = [((0, 2), &[(0, 0), (0, 1)])];
+        let mut chording = Chording::new(&CHORDS);
 
         // Verify a chord is converted to the correct key
         let mut double_press = Vec::<Event, 8>::new();
@@ -223,8 +212,8 @@ mod test {
 
     #[test]
     fn chord_press_half_release() {
-        const CHORD: ChordDef = ChordDef::new((0, 2), &[(0, 0), (0, 1)]);
-        let mut chording = Chording::new(&[CHORD]);
+        const CHORDS: [ChordDef; 1] = [((0, 2), &[(0, 0), (0, 1)])];
+        let mut chording = Chording::new(&CHORDS);
 
         // Verify a chord is converted to the correct key
         let mut double_press = Vec::<Event, 8>::new();
