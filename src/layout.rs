@@ -55,9 +55,13 @@ use State::*;
 
 /// The Layers type.
 ///
-/// The first level correspond to the layer, the two others to the
-/// switch matrix.  For example, `layers[1][2][3]` correspond to the
-/// key i=2, j=3 on the layer 1.
+/// `Layers` type is an array of layers which contain the description
+/// of actions on the switch matrix. For example `layers[1][2][3]`
+/// corresponds to the key on the first layer, row 2, column 3.
+/// The generic parameters are in order: The type contained in custom actions,
+/// the number of columns, rows and layers.
+/// If no custom actions are used the first parameter should be specified as
+/// `keyberon::layout::NoCustom` (or `core::convert::Infallible`).
 pub type Layers<T, const C: usize, const R: usize, const L: usize> = [[[Action<T>; C]; R]; L];
 
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
@@ -711,13 +715,13 @@ mod test {
 
     #[test]
     fn multiple_layers() {
-        static LAYERS: Layers = &[
-            &[&[l(1), l(2)]],
-            &[&[k(A), l(3)]],
-            &[&[l(0), k(B)]],
-            &[&[k(C), k(D)]],
+        static LAYERS: Layers<NoCustom, 2, 1, 4> = [
+            [[l(1), l(2)]],
+            [[k(A), l(3)]],
+            [[l(0), k(B)]],
+            [[k(C), k(D)]],
         ];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());
