@@ -83,43 +83,65 @@ impl Chord {
         me
     }
 
-    fn process(&mut self, event: Event) -> Option<Event> {
-        match event {
-            Event::Press(_, _) => {
-                if !self.in_progress {
-                    for (k, _) in self
-                        .def
-                        .1
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, key)| **key == event.coord())
-                    {
-                        self.keys_pressed[k] = true;
-                    }
-                    if self.keys_pressed.iter().all(|&k| k) {
-                        self.in_progress = true;
-                        return Some(Event::press_from_coord(self.def.0));
-                    }
-                }
-            }
-            Event::Release(_, _) => {
-                for (k, _) in self
-                    .def
-                    .1
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, key)| **key == event.coord())
-                {
-                    self.keys_pressed[k] = false;
-                }
-                if self.in_progress && self.keys_pressed.iter().all(|&k| !k) {
-                    self.in_progress = false;
-                    self.keys_pressed.iter_mut().for_each(|k| *k = false);
-                    return Some(Event::release_from_coord(self.def.0));
-                }
+    fn tick(&mut self, events: &Vec<Event, 8>) {
+        for e in events {
+            for (k, _) in self
+                .def
+                .1
+                .iter()
+                .enumerate()
+                .filter(|(_, key)| **key == e.coord())
+            {
+                self.keys_pressed[k] = e.is_press();
             }
         }
-        None
+    }
+
+    fn contains_chord(&mut self, events: &Vec<Event, 8>) -> bool {
+        for key in self.def.1 {
+            if events
+                .iter()
+                .position(|&k| (&k.coord() == key && k.is_press()))
+                .is_none()
+            {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn handle_chord(&mut self, events: &mut Vec<Event, 8>) {
+        self.in_progress = true;
+        for key in self.def.1 {
+            if let Some(position) = events
+                .iter()
+                .position(|&k| (&k.coord() == key && k.is_press()))
+            {
+                events.swap_remove(position);
+            }
+        }
+        events
+            .push(Event::Press(self.def.0 .0, self.def.0 .1))
+            .unwrap();
+    }
+
+    fn handle_release(&mut self, events: &mut Vec<Event, 8>) {
+        if self.in_progress {
+            for key in self.def.1 {
+                if let Some(position) = events
+                    .iter()
+                    .position(|&k| (&k.coord() == key && k.is_release()))
+                {
+                    events.swap_remove(position);
+                }
+            }
+            if self.keys_pressed.iter().all(|&k| !k) {
+                events
+                    .push(Event::Release(self.def.0 .0, self.def.0 .1))
+                    .unwrap();
+                self.in_progress = false;
+            }
+        }
     }
 }
 
@@ -140,36 +162,15 @@ impl<const N: usize> Chording<N> {
     }
 
     /// Consolidate events and return processed results as a result.
-    pub fn tick(&mut self, vec: Vec<Event, 8>) -> Vec<Event, 8> {
-        let mut vec_remove = Vec::<Event, 8>::new();
-
-        // If the event is the last in a chord, map it to the result (and remove any assisting events.)
-        let events: Vec<Event, 4> = vec
-            .into_iter()
-            .map(|event| {
-                for chord in self.chords.iter_mut() {
-                    match chord.process(event) {
-                        Some(e @ Event::Press(_, _)) => {
-                            vec_remove
-                                .extend(chord.def.1.iter().copied().map(Event::press_from_coord));
-                            return e;
-                        }
-                        Some(e @ Event::Release(_, _)) => {
-                            vec_remove
-                                .extend(chord.def.1.iter().copied().map(Event::release_from_coord));
-                            return e;
-                        }
-                        None => {}
-                    }
-                }
-                event
-            })
-            .collect();
-
-        events
-            .into_iter()
-            .filter(|event| !vec_remove.contains(event))
-            .collect()
+    pub fn tick(&mut self, mut vec: Vec<Event, 8>) -> Vec<Event, 8> {
+        for c in &mut self.chords {
+            c.tick(&vec);
+            if c.contains_chord(&vec) {
+                c.handle_chord(&mut vec);
+            }
+            c.handle_release(&mut vec);
+        }
+        vec
     }
 }
 
@@ -203,11 +204,15 @@ mod test {
         double_press.push(Press(0, 0)).ok();
         double_press.push(Press(0, 1)).ok();
         assert_eq!(chording.tick(double_press), &[Press(0, 2)]);
+        let nothing = Vec::<Event, 8>::new();
+        assert_eq!(chording.tick(nothing), &[]);
         let mut double_release = Vec::<Event, 8>::new();
         double_release.push(Release(0, 0)).ok();
         double_release.push(Release(0, 1)).ok();
         let chord_double_release = chording.tick(double_release);
         assert_eq!(chord_double_release, &[Release(0, 2)]);
+        let nothing = Vec::<Event, 8>::new();
+        assert_eq!(chording.tick(nothing), &[]);
     }
 
     #[test]
@@ -222,8 +227,8 @@ mod test {
         assert_eq!(chording.tick(double_press), &[Press(0, 2)]);
         let mut first_release = Vec::<Event, 8>::new();
         first_release.push(Release(0, 0)).ok();
-        // we will see the key release pass through, but this won't matter
-        assert_eq!(chording.tick(first_release), &[Release(0, 0)]);
+        // we don't want to see the release pass through of a single key
+        assert_eq!(chording.tick(first_release), &[]);
         let mut second_release = Vec::<Event, 8>::new();
         second_release.push(Release(0, 1)).ok();
         // once all keys of the combo are released, the combo is released
