@@ -218,6 +218,22 @@ mod test {
     }
 
     #[test]
+    fn chord_individual_press() {
+        const CHORDS: [ChordDef; 1] = [((0, 2), &[(0, 0), (0, 1)])];
+        let mut chording = Chording::new(&CHORDS);
+
+        // Verify that pressing the keys that make up a chord at different
+        // times will not trigger the chord
+        let mut key_a_press = Vec::<Event, 8>::new();
+        key_a_press.push(Press(0, 0)).ok();
+        assert_eq!(chording.tick(key_a_press), &[Press(0, 0)]);
+        let mut key_b_press = Vec::<Event, 8>::new();
+        key_b_press.push(Press(0, 1)).ok();
+        assert_eq!(chording.tick(key_b_press), &[Press(0, 1)]);
+        let nothing = Vec::<Event, 8>::new();
+        assert_eq!(chording.tick(nothing), &[]);
+    }
+    #[test]
     fn chord_press_half_release() {
         const CHORDS: [ChordDef; 1] = [((0, 2), &[(0, 0), (0, 1)])];
         let mut chording = Chording::new(&CHORDS);
