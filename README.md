@@ -72,6 +72,7 @@ The supported features are:
  - Multiple keys sent on an single key press. It allows to have keys
    for complex shortcut, for example a key for copy and paste or alt tab, or
    for whatever you want.
+ - Chording multiple keys together to act as a single key
  - hold tap: different action depending if the key is held or
    tapped. For example, you can have a key acting as layer change when
    held, and space when tapped.
