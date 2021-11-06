@@ -1,3 +1,5 @@
+//! Chording implemention to mimic a single key.
+//!
 //! Provides chord support for emulating a single layout event
 //! from multiple key presses. The single event press is triggered
 //! once all the keys of the chord have been pressed and the chord
@@ -24,6 +26,7 @@
 ///     ((0, 2), &[(0, 0), (0, 1)]),
 ///     ((0, 0), &[(0, 1), (0, 2)]),
 /// ];
+/// // A count of 30 (ms) is a good default
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
 /// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
@@ -83,7 +86,7 @@ impl Chord {
         me
     }
 
-    fn tick(&mut self, events: &Vec<Event, 8>) {
+    fn tick(&mut self, events: &[Event]) {
         for e in events {
             for (k, _) in self
                 .def
@@ -97,7 +100,7 @@ impl Chord {
         }
     }
 
-    fn contains_chord(&mut self, events: &Vec<Event, 8>) -> bool {
+    fn contains_chord(&mut self, events: &[Event]) -> bool {
         for key in self.def.1 {
             if events
                 .iter()
@@ -145,7 +148,8 @@ impl Chord {
     }
 }
 
-/// Two keys at once!
+/// The chording manager. Initialize with a list of chord
+/// definitions, and update after debounce
 pub struct Chording<const N: usize> {
     /// Defined chords
     chords: Vec<Chord, N>,
@@ -154,11 +158,9 @@ pub struct Chording<const N: usize> {
 impl<const N: usize> Chording<N> {
     /// Take the predefined chord list in.
     pub fn new(chords: &'static [ChordDef; N]) -> Self {
-        let mut v = Vec::<Chord, N>::new();
-        for ch in chords {
-            v.push(Chord::new(ch)).ok().unwrap();
+        Self {
+            chords: chords.iter().map(Chord::new).collect(),
         }
-        Self { chords: v }
     }
 
     /// Consolidate events and return processed results as a result.
