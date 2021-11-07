@@ -35,7 +35,7 @@ ergo keyboard. It runs on a [WeAct
 MiniF4](https://github.com/WeActTC/MiniF4-STM32F4x1) based on a
 STM32F401 MCU.
 
-![keyberon-f4](https://raw.githubusercontent.com/TeXitoi/keyberon-f4/master/images/keyberon-56.jpg)
+![keyberon-f4](https://raw.githubusercontent.com/TeXitoi/keyberon-f4/master/images/keyberon-44.jpg)
 
 [TssT16](https://github.com/TssT16)'s 4x12 keyboard (blue pill based):
 
