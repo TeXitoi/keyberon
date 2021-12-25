@@ -77,9 +77,8 @@ where
     /// Multiple actions sent at the same time.
     MultipleActions(&'static [Action<T>]),
     /// While pressed, change the current layer. That's the classic
-    /// Fn key. If several layer actions are active at the same time,
-    /// their numbers are summed. For example, if you press at the same
-    /// time `Layer(1)` and `Layer(2)`, layer 3 will be active.
+    /// Fn key. If several layer actions are hold at the same time,
+    /// the last pressed defines the current layer.
     Layer(usize),
     /// Change the default layer.
     DefaultLayer(usize),
