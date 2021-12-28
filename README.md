@@ -64,8 +64,7 @@ keyboard (STM32F072 based).
 
 The supported features are:
  - Layers when holding a key (aka the fn key). When holding multiple
-   layer keys, the numbers add (if you have a layer 1 key and a layer
-   2 key, when holding the 2 together, the layer 3 will be active).
+   layer keys, the last pressed layer action sets the layer.
  - Transparent key, i.e. when on an alternative layer, the key will
    inherit the behavior of the default layer.
  - Change default layer dynamically.
