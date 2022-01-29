@@ -15,6 +15,8 @@ USB communication.
 
 ## Projects using this firmware
 
+[List of Repositories using Keyberon](./KEYBOARDS.md)
+
 The first project using this firmware is [Keyberon
 grid](https://github.com/TeXitoi/keyberon-grid), a handwired keyboard
 with a grid of keys. It is based on the blue pill, a cheap development
