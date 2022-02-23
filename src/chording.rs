@@ -16,7 +16,7 @@
 /// ## Usage
 /// ```
 /// use keyberon::chording::{Chording, ChordDef};
-/// use keyberon::layout::{NoCustom, Layout, Event::*, Event};
+/// use keyberon::layout::{Layout, Event::*, Event};
 /// use keyberon::debounce::Debouncer;
 /// use keyberon::matrix::{Matrix, PressedKeys};
 ///
@@ -29,7 +29,7 @@
 /// // A count of 30 (ms) is a good default
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
-/// pub static LAYERS: keyberon::layout::Layers<NoCustom, 3, 1, 1> = keyberon::layout::layout! {
+/// pub static LAYERS: keyberon::layout::Layers<3, 1, 1> = keyberon::layout::layout! {
 ///     { [ A B C ] }
 /// };
 ///
@@ -102,10 +102,7 @@ impl Chord {
 
     fn contains_chord(&mut self, events: &[Event]) -> bool {
         for key in self.def.1 {
-            if !events
-                .iter()
-                .any(|&k| (&k.coord() == key && k.is_press()))
-            {
+            if !events.iter().any(|&k| (&k.coord() == key && k.is_press())) {
                 return false;
             }
         }

@@ -21,7 +21,7 @@ fn test_layout_equality() {
     };
 
     #[rustfmt::skip]
-    pub static LAYERS_OLD: Layers<NoCustom, 12, 4, 2> = [
+    pub static LAYERS_OLD: Layers<12, 4, 2> = [
         [
             [k(Tab),    k(Q), k(W), k(E), k(R), k(T),   k(Y), k(U), k(I),     k(O),   k(P),      k(BSpace)],
             [k(LCtrl),  k(A), k(S), k(D), k(F), k(G),   k(H), k(J), k(K),     k(L),   k(SColon), k(Quote) ],
@@ -36,7 +36,7 @@ fn test_layout_equality() {
         ],
     ];
 
-    pub static LAYERS: Layers<NoCustom, 12, 4, 2> = layout! {
+    pub static LAYERS: Layers<12, 4, 2> = layout! {
         {
             [ Tab    Q W E R T   Y U I O P BSpace ]
             [ LCtrl  A S D F G   H J K L ; Quote  ]
@@ -58,12 +58,12 @@ fn test_layout_equality() {
 
 #[test]
 fn test_nesting() {
-    static A: Layers<NoCustom, 2, 1, 1> = layout! {
+    static A: Layers<2, 1, 1> = layout! {
         {
             [{k(D)} [(5) [C {k(D)}]]]
         }
     };
-    static B: Layers<NoCustom, 2, 1, 1> = [[[
+    static B: Layers<2, 1, 1> = [[[
         k(D),
         Action::MultipleActions(&[Action::Layer(5), Action::MultipleActions(&[k(C), k(D)])]),
     ]]];
@@ -72,12 +72,12 @@ fn test_nesting() {
 
 #[test]
 fn test_layer_switch() {
-    static A: Layers<NoCustom, 5, 1, 1> = layout! {
+    static A: Layers<5, 1, 1> = layout! {
         {
             [(0xa) (0b0110) (b'a' as usize) (1 + 8 & 32) ([4,5][0])]
         }
     };
-    static B: Layers<NoCustom, 5, 1, 1> = [[[
+    static B: Layers<5, 1, 1> = [[[
         Action::Layer(0xa),
         Action::Layer(6),
         Action::Layer(b'a' as usize),
@@ -89,11 +89,11 @@ fn test_layer_switch() {
 
 #[test]
 fn test_escapes() {
-    static A: Layers<NoCustom, 2, 1, 1> = layout! {
+    static A: Layers<2, 1, 1> = layout! {
         {
             ['\\' '\'']
         }
     };
-    static B: Layers<NoCustom, 2, 1, 1> = [[[k(Bslash), k(Quote)]]];
+    static B: Layers<2, 1, 1> = [[[k(Bslash), k(Quote)]]];
     assert_eq!(A, B);
 }
