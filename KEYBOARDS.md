@@ -12,3 +12,4 @@
 | [nibble-rp2040-rs](https://github.com/DrewTChrist/nibble-rp2040-rs)        | PCB              | RP2040    | <ul><li>[x] Matrix </li><li>[ ] Rotary Encoder</li><li>[ ] RGB LEDs</li><li>[ ] OLED</li></ul> |
 | [keyboard-labs](https://github.com/rgoulter/keyboard-labs)                 | PCB              | STM32F401 | <ul><li>[x] Matrix </li><li>[x] Split</li></ul>                                                |
 | [makerdiary M60](https://github.com/jamesmunns/m60-keyboard/)              | PCB              | nRF52840  | <ul><li>[x] Matrix </li><li>[x] RGB LEDs</li> |
+| [PouetPouet](https://github.com/dkm/pouetpouet)                          | PCB              | STM32F072 | <ul><li>[x] Matrix </li></ul>                                                |
