@@ -102,10 +102,8 @@ impl Chord {
 
     fn contains_chord(&mut self, events: &[Event]) -> bool {
         for key in self.def.1 {
-            if events
-                .iter()
-                .position(|&k| (&k.coord() == key && k.is_press()))
-                .is_none()
+            if !events
+                .iter().any(|&k| (&k.coord() == key && k.is_press()))
             {
                 return false;
             }
