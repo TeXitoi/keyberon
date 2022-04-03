@@ -63,7 +63,10 @@ use State::*;
 pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
     [[[Action<T>; C]; R]; L];
 
-type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
+/// The current event stack.
+///
+/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
+pub type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
@@ -215,11 +218,18 @@ struct WaitingState<T: 'static> {
     tap: &'static Action<T>,
     config: HoldTapConfig,
 }
-enum WaitingAction {
+
+/// Actions that can be triggered for a key configured for HoldTap.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum WaitingAction {
+    /// Trigger the holding event.
     Hold,
+    /// Trigger the tapping event.
     Tap,
+    /// Do not trigger any event.
     NoOp,
 }
+
 impl<T> WaitingState<T> {
     fn tick(&mut self, stacked: &Stack) -> WaitingAction {
         self.timeout = self.timeout.saturating_sub(1);
@@ -239,6 +249,11 @@ impl<T> WaitingState<T> {
                             return WaitingAction::Hold;
                         }
                     }
+                }
+            }
+            HoldTapConfig::Custom(func) => {
+                if let Some(waiting_action) = (func.0)(stacked) {
+                    return waiting_action;
                 }
             }
         }
@@ -262,8 +277,9 @@ impl<T> WaitingState<T> {
     }
 }
 
+/// A time-tracked event.
 #[derive(Debug)]
-struct Stacked {
+pub struct Stacked {
     event: Event,
     since: u16,
 }
@@ -275,6 +291,11 @@ impl From<Event> for Stacked {
 impl Stacked {
     fn tick(&mut self) {
         self.since = self.since.saturating_add(1);
+    }
+
+    /// Get the [Event] from this object.
+    pub fn event(&self) -> Event {
+        self.event
     }
 }
 

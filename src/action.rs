@@ -1,6 +1,31 @@
 //! The different actions that can be done.
 
 use crate::key_code::KeyCode;
+use crate::layout::{Stack, WaitingAction};
+use core::fmt::Debug;
+
+/// A newtype around a custom handler for HoldTap actions.
+#[derive(Copy, Clone)]
+pub struct CustomHandler(pub &'static (dyn Fn(&Stack) -> Option<WaitingAction> + Sync));
+
+impl Debug for CustomHandler {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Custom").field(&"<function>").finish()
+    }
+}
+
+impl PartialEq for CustomHandler {
+    fn eq(&self, other: &Self) -> bool {
+        // Only compare the thin pointer for equality, since fat pointers can
+        // fail equality comparisons.
+        core::ptr::eq(
+            self.0 as *const _ as *const (),
+            other.0 as *const _ as *const (),
+        )
+    }
+}
+
+impl Eq for CustomHandler {}
 
 /// Behavior configuration of HoldTap.
 #[non_exhaustive]
@@ -16,7 +41,7 @@ pub enum HoldTapConfig {
     /// not used in the flow of typing, like escape for example. If
     /// you are annoyed by accidental tap, you can try this behavior.
     HoldOnOtherKeyPress,
-    /// If there is a release and a press of another key, the hold
+    /// If there is a press and release of another key, the hold
     /// action is activated.
     ///
     /// This behavior is interesting for fast typist: the different
@@ -24,6 +49,57 @@ pub enum HoldTapConfig {
     /// events than on timing. Be aware that doing the good succession
     /// of key might require some training.
     PermissiveHold,
+    /// A custom configuration. Allows the behavior to be controlled by a caller
+    /// supplied handler function.
+    ///
+    /// # Example:
+    /// Hold events can be prevented from triggering when pressing multiple keys
+    /// on the same side of the keyboard (but does not prevent multiple hold
+    /// events).
+    /// ```
+    /// use keyberon::action::{Action, Custom, HoldTapConfig};
+    /// use keyberon::key_code::KeyCode;
+    /// use keyberon::layout::{Stack, WaitingAction, Event};
+    ///
+    /// /// Trigger a `Tap` action on the left side of the keyboard if another
+    /// /// key on the left side of the keyboard is pressed.
+    /// fn left_mod(stack: &Stack) -> Option<WaitingAction> {
+    ///     match stack.iter().map(|s| s.event()).find(|e| e.is_press()) {
+    ///         Some(Event::Press(_, j)) if j < 6 => Some(WaitingAction::Tap),
+    ///         _ => None,
+    ///     }
+    /// }
+    ///
+    /// /// Trigger a `Tap` action on the right side of the keyboard if another
+    /// /// key on the right side of the keyboard is pressed.
+    /// fn right_mod(stack: &Stack) -> Option<WaitingAction> {
+    ///     match stack.iter().map(|s| s.event()).find(|e| e.is_press()) {
+    ///         Some(Event::Press(_, j)) if j > 5 => Some(WaitingAction::Tap),
+    ///         _ => None,
+    ///     }
+    /// }
+    ///
+    /// // Assuming a standard QWERTY layout, the left shift hold action will
+    /// // not be triggered when pressing Tab-T, CapsLock-G, nor Shift-B.
+    /// const A_SHIFT: Action = Action::HoldTap {
+    ///     timeout: 200,
+    ///     hold: &Action::KeyCode(KeyCode::LShift),
+    ///     tap: &Action::KeyCode(KeyCode::A),
+    ///     config: HoldTapConfig::Custom(Custom(&left_mod)),
+    ///     tap_hold_interval: 0,
+    /// };
+    ///
+    /// // Assuming a standard QWERTY layout, the right shift hold action will
+    /// // not be triggered when pressing Y-Pipe, H-Enter, nor N-Shift.
+    /// const SEMI_SHIFT: Action = Action::HoldTap {
+    ///     timeout: 200,
+    ///     hold: &Action::KeyCode(KeyCode::RShift),
+    ///     tap: &Action::KeyCode(KeyCode::SColon),
+    ///     config: HoldTapConfig::Custom(Custom(&right_mod)),
+    ///     tap_hold_interval: 0,
+    /// };
+    /// ```
+    Custom(CustomHandler),
 }
 
 /// The different actions that can be done.
