@@ -67,7 +67,7 @@ type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<T, const C: usize, const R: usize, const L: usize>
+pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
 where
     T: 'static,
 {
@@ -278,7 +278,7 @@ impl Stacked {
     }
 }
 
-impl<T: 'static, const C: usize, const R: usize, const L: usize> Layout<T, C, R, L> {
+impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
     /// Creates a new `Layout` object.
     pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
         Self {
