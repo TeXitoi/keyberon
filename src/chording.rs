@@ -29,11 +29,11 @@
 /// // A count of 30 (ms) is a good default
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
-/// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
+/// pub static LAYERS: keyberon::layout::Layers<3, 1, 1> = keyberon::layout::layout! {
 ///     { [ A B C ] }
 /// };
 ///
-/// let mut layout = Layout::new(LAYERS);
+/// let mut layout = Layout::new(&LAYERS);
 /// // Debouncer period determines chording timeout
 /// let mut debouncer: Debouncer<PressedKeys<3, 1>> =
 ///     Debouncer::new(PressedKeys::default(), PressedKeys::default(), DEBOUNCE_COUNT);
@@ -102,9 +102,7 @@ impl Chord {
 
     fn contains_chord(&mut self, events: &[Event]) -> bool {
         for key in self.def.1 {
-            if !events
-                .iter().any(|&k| (&k.coord() == key && k.is_press()))
-            {
+            if !events.iter().any(|&k| (&k.coord() == key && k.is_press())) {
                 return false;
             }
         }

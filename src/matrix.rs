@@ -2,6 +2,15 @@
 
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
+/// Describes the hardware-level matrix of switches.
+///
+/// Generic parameters are in order: The type of column pins,
+/// the type of row pins, the number of columns and rows.
+/// **NOTE:** In order to be able to put different pin structs
+/// in an array they have to be downgraded (stripped of their
+/// numbers etc.). Most HAL-s have a method of downgrading pins
+/// to a common (erased) struct. (for example see
+/// [stm32f0xx_hal::gpio::PA0::downgrade](https://docs.rs/stm32f0xx-hal/0.17.1/stm32f0xx_hal/gpio/gpioa/struct.PA0.html#method.downgrade))
 pub struct Matrix<C, R, const CS: usize, const RS: usize>
 where
     C: InputPin,
@@ -16,6 +25,10 @@ where
     C: InputPin,
     R: OutputPin,
 {
+    /// Creates a new Matrix.
+    /// 
+    /// Assumes columns are pull-up inputs,
+    /// and rows are output pins which are set high when not being scanned.
     pub fn new<E>(cols: [C; CS], rows: [R; RS]) -> Result<Self, E>
     where
         C: InputPin<Error = E>,
@@ -35,6 +48,10 @@ where
         }
         Ok(())
     }
+    /// Scans the matrix and checks which keys are pressed.
+    ///
+    /// Every row pin in order is pulled low, and then each column
+    /// pin is tested; if it's low, the key is marked as pressed.
     pub fn get<E>(&mut self) -> Result<PressedKeys<CS, RS>, E>
     where
         C: InputPin<Error = E>,

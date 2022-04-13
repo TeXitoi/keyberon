@@ -18,14 +18,14 @@ pub fn layout(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             TokenTree::Group(g) if g.delimiter() == Delimiter::Brace => {
                 let layer = parse_layer(g.stream());
                 inside.extend(quote! {
-                    &[#layer],
+                    [#layer],
                 });
             }
             _ => abort!(t, "Invalid token, expected layer: {{ ... }}"),
         }
     }
 
-    let all: TokenStream = quote! { &[#inside] };
+    let all: TokenStream = quote! { [#inside] };
     out.extend(all);
 
     out.into()
@@ -38,7 +38,7 @@ fn parse_layer(input: TokenStream) -> TokenStream {
             TokenTree::Group(g) if g.delimiter() == Delimiter::Bracket => {
                 let row = parse_row(g.stream());
                 out.extend(quote! {
-                    &[#row],
+                    [#row],
                 });
             }
             TokenTree::Punct(p) if p.as_char() == ',' => (),
