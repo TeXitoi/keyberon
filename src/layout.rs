@@ -66,7 +66,7 @@ pub type Layers<const C: usize, const R: usize, const L: usize, T = core::conver
 /// The current event stack.
 ///
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
-pub type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
+type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
@@ -252,7 +252,7 @@ impl<T> WaitingState<T> {
                 }
             }
             HoldTapConfig::Custom(func) => {
-                if let Some(waiting_action) = (func.0)(stacked) {
+                if let Some(waiting_action) = (func.0)(StackedIter(stacked.iter())) {
                     return waiting_action;
                 }
             }
@@ -277,7 +277,22 @@ impl<T> WaitingState<T> {
     }
 }
 
-/// A time-tracked event.
+/// An iterator over the currently stacked events.
+///
+/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
+pub struct StackedIter<'a>(arraydeque::Iter<'a, Stacked>);
+
+impl<'a> Iterator for StackedIter<'a> {
+    type Item = &'a Stacked;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+/// An event, waiting in a stack to be processed.
 #[derive(Debug)]
 pub struct Stacked {
     event: Event,

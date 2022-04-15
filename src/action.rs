@@ -1,27 +1,22 @@
 //! The different actions that can be done.
 
 use crate::key_code::KeyCode;
-use crate::layout::{Stack, WaitingAction};
+use crate::layout::{WaitingAction, StackedIter};
 use core::fmt::Debug;
 
 /// A newtype around a custom handler for HoldTap actions.
 #[derive(Copy, Clone)]
-pub struct CustomHandler(pub &'static (dyn Fn(&Stack) -> Option<WaitingAction> + Sync));
+pub struct CustomHandler(pub fn(StackedIter) -> Option<WaitingAction>);
 
 impl Debug for CustomHandler {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("Custom").field(&"<function>").finish()
+        Debug::fmt(&(self.0 as fn(StackedIter<'static>) -> Option<WaitingAction>), f)
     }
 }
 
 impl PartialEq for CustomHandler {
     fn eq(&self, other: &Self) -> bool {
-        // Only compare the thin pointer for equality, since fat pointers can
-        // fail equality comparisons.
-        core::ptr::eq(
-            self.0 as *const _ as *const (),
-            other.0 as *const _ as *const (),
-        )
+        self.0 as fn(StackedIter<'static>) -> Option<WaitingAction> == other.0
     }
 }
 
