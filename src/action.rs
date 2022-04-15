@@ -47,19 +47,30 @@ pub enum HoldTapConfig {
     /// A custom configuration. Allows the behavior to be controlled by a caller
     /// supplied handler function.
     ///
+    /// The input to the custom handler will be an iterator that returns
+    /// [Stacked] [Events](Event). The order of the events matches the order the
+    /// corresponding key was pressed/released, i.e. the first event is the
+    /// event first received after the HoldTap action key is pressed.
+    ///
+    /// The return value should be the intended action that should be used. A
+    /// [Some] value will cause one of: [WaitingAction::Tap] for the configured
+    /// tap action, [WaitingAction::Hold] for the hold action, and
+    /// [WaitingAction::NoOp] to force no action to occur this cycle. A [None]
+    /// value will cause a fallback to the timeout-based approach.
+    ///
     /// # Example:
     /// Hold events can be prevented from triggering when pressing multiple keys
     /// on the same side of the keyboard (but does not prevent multiple hold
     /// events).
     /// ```
-    /// use keyberon::action::{Action, Custom, HoldTapConfig};
+    /// use keyberon::action::{Action, CustomHandler, HoldTapConfig};
     /// use keyberon::key_code::KeyCode;
-    /// use keyberon::layout::{Stack, WaitingAction, Event};
+    /// use keyberon::layout::{StackedIter, WaitingAction, Event};
     ///
     /// /// Trigger a `Tap` action on the left side of the keyboard if another
     /// /// key on the left side of the keyboard is pressed.
-    /// fn left_mod(stack: &Stack) -> Option<WaitingAction> {
-    ///     match stack.iter().map(|s| s.event()).find(|e| e.is_press()) {
+    /// fn left_mod(stacked_iter: StackedIter) -> Option<WaitingAction> {
+    ///     match stacked_iter.map(|s| s.event()).find(|e| e.is_press()) {
     ///         Some(Event::Press(_, j)) if j < 6 => Some(WaitingAction::Tap),
     ///         _ => None,
     ///     }
@@ -67,8 +78,8 @@ pub enum HoldTapConfig {
     ///
     /// /// Trigger a `Tap` action on the right side of the keyboard if another
     /// /// key on the right side of the keyboard is pressed.
-    /// fn right_mod(stack: &Stack) -> Option<WaitingAction> {
-    ///     match stack.iter().map(|s| s.event()).find(|e| e.is_press()) {
+    /// fn right_mod(stacked_iter: StackedIter) -> Option<WaitingAction> {
+    ///     match stacked_iter.map(|s| s.event()).find(|e| e.is_press()) {
     ///         Some(Event::Press(_, j)) if j > 5 => Some(WaitingAction::Tap),
     ///         _ => None,
     ///     }
@@ -80,7 +91,7 @@ pub enum HoldTapConfig {
     ///     timeout: 200,
     ///     hold: &Action::KeyCode(KeyCode::LShift),
     ///     tap: &Action::KeyCode(KeyCode::A),
-    ///     config: HoldTapConfig::Custom(Custom(&left_mod)),
+    ///     config: HoldTapConfig::Custom(CustomHandler(left_mod)),
     ///     tap_hold_interval: 0,
     /// };
     ///
@@ -90,7 +101,7 @@ pub enum HoldTapConfig {
     ///     timeout: 200,
     ///     hold: &Action::KeyCode(KeyCode::RShift),
     ///     tap: &Action::KeyCode(KeyCode::SColon),
-    ///     config: HoldTapConfig::Custom(Custom(&right_mod)),
+    ///     config: HoldTapConfig::Custom(CustomHandler(right_mod)),
     ///     tap_hold_interval: 0,
     /// };
     /// ```
