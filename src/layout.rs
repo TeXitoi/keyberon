@@ -252,7 +252,7 @@ impl<T> WaitingState<T> {
                 }
             }
             HoldTapConfig::Custom(func) => {
-                if let Some(waiting_action) = (func.0)(StackedIter(stacked.iter())) {
+                if let Some(waiting_action) = (func)(StackedIter(stacked.iter())) {
                     return waiting_action;
                 }
             }

@@ -26,7 +26,7 @@ where
     R: OutputPin,
 {
     /// Creates a new Matrix.
-    /// 
+    ///
     /// Assumes columns are pull-up inputs,
     /// and rows are output pins which are set high when not being scanned.
     pub fn new<E>(cols: [C; CS], rows: [R; RS]) -> Result<Self, E>

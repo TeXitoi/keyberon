@@ -1,30 +1,12 @@
 //! The different actions that can be done.
 
 use crate::key_code::KeyCode;
-use crate::layout::{WaitingAction, StackedIter};
+use crate::layout::{StackedIter, WaitingAction};
 use core::fmt::Debug;
-
-/// A newtype around a custom handler for HoldTap actions.
-#[derive(Copy, Clone)]
-pub struct CustomHandler(pub fn(StackedIter) -> Option<WaitingAction>);
-
-impl Debug for CustomHandler {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Debug::fmt(&(self.0 as fn(StackedIter<'static>) -> Option<WaitingAction>), f)
-    }
-}
-
-impl PartialEq for CustomHandler {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 as fn(StackedIter<'static>) -> Option<WaitingAction> == other.0
-    }
-}
-
-impl Eq for CustomHandler {}
 
 /// Behavior configuration of HoldTap.
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy)]
 pub enum HoldTapConfig {
     /// Only the timeout will determine between hold and tap action.
     ///
@@ -63,7 +45,7 @@ pub enum HoldTapConfig {
     /// on the same side of the keyboard (but does not prevent multiple hold
     /// events).
     /// ```
-    /// use keyberon::action::{Action, CustomHandler, HoldTapConfig};
+    /// use keyberon::action::{Action, HoldTapConfig};
     /// use keyberon::key_code::KeyCode;
     /// use keyberon::layout::{StackedIter, WaitingAction, Event};
     ///
@@ -91,7 +73,7 @@ pub enum HoldTapConfig {
     ///     timeout: 200,
     ///     hold: &Action::KeyCode(KeyCode::LShift),
     ///     tap: &Action::KeyCode(KeyCode::A),
-    ///     config: HoldTapConfig::Custom(CustomHandler(left_mod)),
+    ///     config: HoldTapConfig::Custom(left_mod),
     ///     tap_hold_interval: 0,
     /// };
     ///
@@ -101,12 +83,42 @@ pub enum HoldTapConfig {
     ///     timeout: 200,
     ///     hold: &Action::KeyCode(KeyCode::RShift),
     ///     tap: &Action::KeyCode(KeyCode::SColon),
-    ///     config: HoldTapConfig::Custom(CustomHandler(right_mod)),
+    ///     config: HoldTapConfig::Custom(right_mod),
     ///     tap_hold_interval: 0,
     /// };
     /// ```
-    Custom(CustomHandler),
+    Custom(fn(StackedIter) -> Option<WaitingAction>),
 }
+
+impl Debug for HoldTapConfig {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            HoldTapConfig::Default => f.write_str("Default"),
+            HoldTapConfig::HoldOnOtherKeyPress => f.write_str("HoldOnOtherKeyPress"),
+            HoldTapConfig::PermissiveHold => f.write_str("PermissiveHold"),
+            HoldTapConfig::Custom(func) => f
+                .debug_tuple("Custom")
+                .field(&(*func as fn(StackedIter<'static>) -> Option<WaitingAction>) as &dyn Debug)
+                .finish(),
+        }
+    }
+}
+
+impl PartialEq for HoldTapConfig {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (HoldTapConfig::Default, HoldTapConfig::Default)
+            | (HoldTapConfig::HoldOnOtherKeyPress, HoldTapConfig::HoldOnOtherKeyPress)
+            | (HoldTapConfig::PermissiveHold, HoldTapConfig::PermissiveHold) => true,
+            (HoldTapConfig::Custom(self_func), HoldTapConfig::Custom(other_func)) => {
+                *self_func as fn(StackedIter<'static>) -> Option<WaitingAction> == *other_func
+            }
+            _ => false,
+        }
+    }
+}
+
+impl Eq for HoldTapConfig {}
 
 /// The different actions that can be done.
 #[non_exhaustive]
