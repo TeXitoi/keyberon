@@ -220,7 +220,7 @@ struct WaitingState<T: 'static> {
 }
 
 /// Actions that can be triggered for a key configured for HoldTap.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum WaitingAction {
     /// Trigger the holding event.
     Hold,
