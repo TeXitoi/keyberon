@@ -14,6 +14,8 @@ use usb_device::UsbError;
 const SPECIFICATION_RELEASE: u16 = 0x111;
 const INTERFACE_CLASS_HID: u8 = 0x03;
 
+pub struct Error;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(u8)]
 pub enum Subclass {
@@ -90,10 +92,14 @@ pub trait HidDevice {
 
     fn report_descriptor(&self) -> &[u8];
 
-    fn set_report(&mut self, report_type: ReportType, report_id: u8, data: &[u8])
-        -> Result<(), ()>;
+    fn set_report(
+        &mut self,
+        report_type: ReportType,
+        report_id: u8,
+        data: &[u8],
+    ) -> Result<(), Error>;
 
-    fn get_report(&mut self, report_type: ReportType, report_id: u8) -> Result<&[u8], ()>;
+    fn get_report(&mut self, report_type: ReportType, report_id: u8) -> Result<&[u8], Error>;
 }
 
 pub struct HidClass<'a, B: UsbBus, D: HidDevice> {
@@ -118,7 +124,7 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         &mut self.device
     }
 
-    pub fn write(&mut self, data: &[u8]) -> Result<usize, ()> {
+    pub fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
         if self.expect_interrupt_in_complete {
             return Ok(0);
         }
@@ -130,7 +136,7 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         match self.endpoint_interrupt_in.write(data) {
             Ok(count) => Ok(count),
             Err(UsbError::WouldBlock) => Ok(0),
-            Err(_) => Err(()),
+            Err(_) => Err(Error),
         }
     }
 
@@ -140,7 +146,7 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         let report_type = ReportType::from(report_type);
         match self.device.get_report(report_type, report_id) {
             Ok(data) => xfer.accept_with(data).ok(),
-            Err(()) => xfer.reject().ok(),
+            Err(Error) => xfer.reject().ok(),
         };
     }
 
@@ -150,7 +156,7 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         let report_type = ReportType::from(report_type);
         match self.device.set_report(report_type, report_id, xfer.data()) {
             Ok(()) => xfer.accept().ok(),
-            Err(()) => xfer.reject().ok(),
+            Err(Error) => xfer.reject().ok(),
         };
     }
 
