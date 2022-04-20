@@ -440,8 +440,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
         self.states
             .iter()
             .rev()
-            .filter_map(State::get_layer)
-            .next()
+            .find_map(State::get_layer)
             .unwrap_or(self.default_layer)
     }
 
