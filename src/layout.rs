@@ -76,6 +76,7 @@ where
     states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
     stacked: Stack,
+    tap_hold_tracker: TapHoldTracker,
 }
 
 /// An event on the key matrix.
@@ -278,6 +279,18 @@ impl Stacked {
     }
 }
 
+#[derive(Default)]
+struct TapHoldTracker {
+    coord: (u8, u8),
+    timeout: u16,
+}
+
+impl TapHoldTracker {
+    fn tick(&mut self) {
+        self.timeout = self.timeout.saturating_sub(1);
+    }
+}
+
 impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
     /// Creates a new `Layout` object.
     pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
@@ -287,6 +300,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             states: Vec::new(),
             waiting: None,
             stacked: ArrayDeque::new(),
+            tap_hold_tracker: Default::default(),
         }
     }
     /// Iterates on the key codes of the current state.
@@ -298,6 +312,9 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             let hold = w.hold;
             let coord = w.coord;
             self.waiting = None;
+            if coord == self.tap_hold_tracker.coord {
+                self.tap_hold_tracker.timeout = 0;
+            }
             self.do_action(hold, coord, 0)
         } else {
             CustomEvent::NoEvent
@@ -322,6 +339,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     pub fn tick(&mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
+        self.tap_hold_tracker.tick();
         match &mut self.waiting {
             Some(w) => match w.tick(&self.stacked) {
                 WaitingAction::Hold => self.waiting_into_hold(),
@@ -393,27 +411,41 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
                 hold,
                 tap,
                 config,
-                ..
+                tap_hold_interval,
             } => {
-                let waiting: WaitingState<T> = WaitingState {
-                    coord,
-                    timeout: *timeout,
-                    delay,
-                    hold,
-                    tap,
-                    config: *config,
-                };
-                self.waiting = Some(waiting);
+                if *tap_hold_interval == 0
+                    || coord != self.tap_hold_tracker.coord
+                    || self.tap_hold_tracker.timeout == 0
+                {
+                    let waiting: WaitingState<T> = WaitingState {
+                        coord,
+                        timeout: *timeout,
+                        delay,
+                        hold,
+                        tap,
+                        config: *config,
+                    };
+                    self.waiting = Some(waiting);
+                    self.tap_hold_tracker.timeout = *tap_hold_interval;
+                } else {
+                    self.tap_hold_tracker.timeout = 0;
+                    self.do_action(tap, coord, delay);
+                }
+                // Need to set tap_hold_tracker coord AFTER the checks.
+                self.tap_hold_tracker.coord = coord;
             }
             &KeyCode(keycode) => {
+                self.tap_hold_tracker.coord = coord;
                 let _ = self.states.push(NormalKey { coord, keycode });
             }
             &MultipleKeyCodes(v) => {
+                self.tap_hold_tracker.coord = coord;
                 for &keycode in v {
                     let _ = self.states.push(NormalKey { coord, keycode });
                 }
             }
             &MultipleActions(v) => {
+                self.tap_hold_tracker.coord = coord;
                 let mut custom = CustomEvent::NoEvent;
                 for action in v {
                     custom.update(self.do_action(action, coord, delay));
@@ -421,12 +453,15 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
                 return custom;
             }
             &Layer(value) => {
+                self.tap_hold_tracker.coord = coord;
                 let _ = self.states.push(LayerModifier { value, coord });
             }
             DefaultLayer(value) => {
+                self.tap_hold_tracker.coord = coord;
                 self.set_default_layer(*value);
             }
             Custom(value) => {
+                self.tap_hold_tracker.coord = coord;
                 if self.states.push(State::Custom { value, coord }).is_ok() {
                     return CustomEvent::Press(value);
                 }
@@ -770,5 +805,269 @@ mod test {
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn tap_hold_interval() {
+        static LAYERS: Layers<2, 1, 1> = [[[
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 200,
+            },
+            k(Enter),
+        ]]];
+        let mut layout = Layout::new(&LAYERS);
+
+        // press and release the HT key, expect tap action
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press again within tap_hold_interval, tap action should be in keycode immediately
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+
+        // tap action should continue to be in keycodes even after timeout
+        for _ in 0..300 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[Space], layout.keycodes());
+        }
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Press again. This is outside the tap_hold_interval window, so should result in hold
+        // action.
+        layout.event(Press(0, 0));
+        for _ in 0..200 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn tap_hold_interval_interleave() {
+        static LAYERS: Layers<3, 1, 1> = [[[
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 200,
+            },
+            k(Enter),
+            HoldTap {
+                timeout: 200,
+                hold: &k(LAlt),
+                tap: &k(Enter),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 200,
+            },
+        ]]];
+        let mut layout = Layout::new(&LAYERS);
+
+        // press and release the HT key, expect tap action
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press a different key in between
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter], layout.keycodes());
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press HT key again, should result in hold action
+        layout.event(Press(0, 0));
+        for _ in 0..200 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press HT key, press+release diff key, release HT key
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter, Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press HT key again, should result in hold action
+        layout.event(Press(0, 0));
+        for _ in 0..200 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press HT key, press+release diff (HT) key, release HT key
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 2));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 2));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter, Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press HT key again, should result in hold action
+        layout.event(Press(0, 0));
+        for _ in 0..200 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+    }
+
+    #[test]
+    fn tap_hold_interval_short_hold() {
+        static LAYERS: Layers<1, 1, 1> = [[[HoldTap {
+            timeout: 50,
+            hold: &k(LAlt),
+            tap: &k(Space),
+            config: HoldTapConfig::Default,
+            tap_hold_interval: 200,
+        }]]];
+        let mut layout = Layout::new(&LAYERS);
+
+        // press and hold the HT key, expect hold action
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        for _ in 0..50 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // press and hold the HT key, expect hold action, even though it's within the
+        // tap_hold_interval
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        for _ in 0..50 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn tap_hold_interval_different_hold() {
+        static LAYERS: Layers<2, 1, 1> = [[[
+            HoldTap {
+                timeout: 50,
+                hold: &k(LAlt),
+                tap: &k(Space),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 200,
+            },
+            HoldTap {
+                timeout: 200,
+                hold: &k(RAlt),
+                tap: &k(Enter),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 200,
+            },
+        ]]];
+        let mut layout = Layout::new(&LAYERS);
+
+        // press HT1, press HT2, release HT1 after hold timeout, release HT2, press HT2
+        layout.event(Press(0, 0));
+        layout.event(Press(0, 1));
+        for _ in 0..50 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt], layout.keycodes());
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LAlt, Enter], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Enter], layout.keycodes());
+        // press HT2 again, should result in tap action
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        for _ in 0..300 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[Enter], layout.keycodes());
+        }
     }
 }

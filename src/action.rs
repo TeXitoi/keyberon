@@ -80,12 +80,14 @@ where
         /// `tap_hold_interval` ticks, the tap action will
         /// be held. This allows the tap action to be held by
         /// pressing, releasing and holding the key, allowing the computer
-        //// to auto repeat the tap behavior.
+        /// to auto repeat the tap behavior. The timeout starts on the
+        /// first press of the key, NOT on the release.
+        ///
+        /// Pressing a different key in between will not result in the
+        /// behaviour described above; the HoldTap key must be pressed twice
+        /// in a row.
         ///
         /// To deactivate the functionality, set this to 0.
-        ///
-        /// Not implemented yet, to not have behavior change with an
-        /// update, set this to 0.
         tap_hold_interval: u16,
     },
     /// Custom action.
