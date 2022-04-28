@@ -37,8 +37,10 @@ pub enum HoldTapConfig {
     /// The return value should be the intended action that should be used. A
     /// [Some] value will cause one of: [WaitingAction::Tap] for the configured
     /// tap action, [WaitingAction::Hold] for the hold action, and
-    /// [WaitingAction::NoOp] to force no action to occur this cycle. A [None]
-    /// value will cause a fallback to the timeout-based approach.
+    /// [WaitingAction::NoOp] to drop handling of the key press. A [None]
+    /// value will cause a fallback to the timeout-based approach. If the
+    /// timeout is not triggered, the next tick will call the custom handler
+    /// again.
     ///
     /// # Example:
     /// Hold events can be prevented from triggering when pressing multiple keys
