@@ -19,14 +19,6 @@ pub enum SequenceEvent {
         /// How long (in ticks) this Delay will last
         duration: u32, // NOTE: This isn't a u16 because that's only max ~65 seconds (assuming 1000 ticks/sec)
     },
-    /// A marker that indicates there's more of the macro than would fit
-    /// in the 'sequenced' ArrayDeque
-    Continue {
-        /// The current chunk
-        index: usize,
-        /// The full list of Sequence Events (that aren't Continue())
-        events: &'static [SequenceEvent],
-    },
     /// Cancels the running sequence and can be used to mark the end of a sequence
     /// instead of using a number of Release() events
     Complete,

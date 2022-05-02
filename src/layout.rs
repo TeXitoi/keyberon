@@ -65,6 +65,9 @@ pub type Layers<const C: usize, const R: usize, const L: usize, T = core::conver
 
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
+// The maximum number of simultaneously-executing Squences:
+const MAX_SEQUENCES: usize = 4;
+
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
 pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
@@ -76,7 +79,8 @@ where
     states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
     stacked: Stack,
-    active_sequences: ArrayDeque<[SequenceState; 4], arraydeque::behavior::Wrapping>,
+    active_sequences:
+        ArrayDeque<[SequenceState; MAX_SEQUENCES], arraydeque::behavior::Wrapping>,
 }
 
 /// An event on the key matrix.
