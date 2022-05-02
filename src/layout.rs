@@ -22,12 +22,13 @@
 /// to do when not using a macro.
 ///
 /// ## Usage example:
-/// Example layout for a 4x12 split keyboard:
+/// Example layout for a 12x4 split keyboard:
 /// ```
 /// use keyberon::action::Action;
+/// use keyberon::layout::Layers;
 /// static DLAYER: Action = Action::DefaultLayer(5);
 ///
-/// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
+/// pub static LAYERS: Layers<12, 4, 2> = keyberon::layout::layout! {
 ///     {
 ///         [ Tab    Q W E R T   Y U I O P BSpace ]
 ///         [ LCtrl  A S D F G   H J K L ; Quote  ]
@@ -36,7 +37,7 @@
 ///     }
 ///     {
 ///         [ Tab    1 2 3 4 5   6 7 8 9 0 BSpace  ]
-///         [ LCtrl  ! @ # $ %   ^ & * '(' ')' - = ]
+///         [ LCtrl  ! @ # $ %   ^ & * '(' ')' -   ]
 ///         [ LShift n n n n n   n n n n n [LAlt A]]
 ///         [ n n LGui (2) t t   t t t RAlt n n    ]
 ///     }
@@ -54,20 +55,23 @@ use State::*;
 
 /// The Layers type.
 ///
-/// The first level correspond to the layer, the two others to the
-/// switch matrix.  For example, `layers[1][2][3]` correspond to the
-/// key i=2, j=3 on the layer 1.
-pub type Layers<T = core::convert::Infallible> = &'static [&'static [&'static [Action<T>]]];
+/// `Layers` type is an array of layers which contain the description
+/// of actions on the switch matrix. For example `layers[1][2][3]`
+/// corresponds to the key on the first layer, row 2, column 3.
+/// The generic parameters are in order: the number of columns, rows and layers,
+/// and the type contained in custom actions.
+pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
+    [[[Action<T>; C]; R]; L];
 
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<T = core::convert::Infallible>
+pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
 where
     T: 'static,
 {
-    layers: Layers<T>,
+    layers: &'static [[[Action<T>; C]; R]; L],
     default_layer: usize,
     states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
@@ -211,7 +215,7 @@ impl<T: 'static> State<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 struct WaitingState<T: 'static> {
     coord: (u8, u8),
     timeout: u16,
@@ -291,9 +295,9 @@ impl Stacked {
     }
 }
 
-impl<T: 'static> Layout<T> {
+impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
     /// Creates a new `Layout` object.
-    pub fn new(layers: Layers<T>) -> Self {
+    pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
         Self {
             layers,
             default_layer: 0,
@@ -481,7 +485,7 @@ impl<T: 'static> Layout<T> {
         use Action::*;
         match action {
             NoOp | Trans => (),
-            &HoldTap {
+            HoldTap {
                 timeout,
                 hold,
                 tap,
@@ -490,11 +494,11 @@ impl<T: 'static> Layout<T> {
             } => {
                 let waiting: WaitingState<T> = WaitingState {
                     coord,
-                    timeout,
+                    timeout: *timeout,
                     delay,
                     hold,
                     tap,
-                    config,
+                    config: *config,
                 };
                 self.waiting = Some(waiting);
             }
@@ -557,8 +561,7 @@ impl<T: 'static> Layout<T> {
         self.states
             .iter()
             .rev()
-            .filter_map(State::get_layer)
-            .next()
+            .find_map(State::get_layer)
             .unwrap_or(self.default_layer)
     }
 
@@ -573,7 +576,7 @@ impl<T: 'static> Layout<T> {
 #[cfg(test)]
 mod test {
     extern crate std;
-    use super::{Event::*, Layers, Layout, *};
+    use super::{Event::*, Layout, *};
     use crate::action::Action::*;
     use crate::action::HoldTapConfig;
     use crate::action::SequenceEvent;
@@ -591,8 +594,8 @@ mod test {
 
     #[test]
     fn basic_hold_tap() {
-        static LAYERS: Layers = &[
-            &[&[
+        static LAYERS: Layers<2, 1, 2> = [
+            [[
                 HoldTap {
                     timeout: 200,
                     hold: &l(1),
@@ -608,9 +611,9 @@ mod test {
                     tap_hold_interval: 0,
                 },
             ]],
-            &[&[Trans, m(&[LCtrl, Enter])]],
+            [[Trans, m(&[LCtrl, Enter])]],
         ];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 1));
@@ -641,7 +644,7 @@ mod test {
 
     #[test]
     fn hold_tap_interleaved_timeout() {
-        static LAYERS: Layers = &[&[&[
+        static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -657,7 +660,7 @@ mod test {
                 tap_hold_interval: 0,
             },
         ]]];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
@@ -688,7 +691,7 @@ mod test {
 
     #[test]
     fn hold_on_press() {
-        static LAYERS: Layers = &[&[&[
+        static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -698,7 +701,7 @@ mod test {
             },
             k(Enter),
         ]]];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
 
         // Press another key before timeout
         assert_eq!(CustomEvent::NoEvent, layout.tick());
@@ -745,7 +748,7 @@ mod test {
 
     #[test]
     fn permissive_hold() {
-        static LAYERS: Layers = &[&[&[
+        static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -755,7 +758,7 @@ mod test {
             },
             k(Enter),
         ]]];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
 
         // Press and release another key before timeout
         assert_eq!(CustomEvent::NoEvent, layout.tick());
@@ -784,11 +787,11 @@ mod test {
 
     #[test]
     fn multiple_actions() {
-        static LAYERS: Layers = &[
-            &[&[MultipleActions(&[l(1), k(LShift)]), k(F)]],
-            &[&[Trans, k(E)]],
+        static LAYERS: Layers<2, 1, 2> = [
+            [[MultipleActions(&[l(1), k(LShift)]), k(F)]],
+            [[Trans, k(E)]],
         ];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
         layout.event(Press(0, 0));
@@ -807,8 +810,8 @@ mod test {
 
     #[test]
     fn custom() {
-        static LAYERS: Layers<u8> = &[&[&[Action::Custom(42)]]];
-        let mut layout = Layout::new(LAYERS);
+        static LAYERS: Layers<1, 1, 1, u8> = [[[Action::Custom(42)]]];
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
 
@@ -829,13 +832,13 @@ mod test {
 
     #[test]
     fn multiple_layers() {
-        static LAYERS: Layers = &[
-            &[&[l(1), l(2)]],
-            &[&[k(A), l(3)]],
-            &[&[l(0), k(B)]],
-            &[&[k(C), k(D)]],
+        static LAYERS: Layers<2, 1, 4> = [
+            [[l(1), l(2)]],
+            [[k(A), l(3)]],
+            [[l(0), k(B)]],
+            [[k(C), k(D)]],
         ];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());

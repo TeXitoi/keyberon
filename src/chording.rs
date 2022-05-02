@@ -18,7 +18,7 @@
 /// use keyberon::chording::{Chording, ChordDef};
 /// use keyberon::layout::{Layout, Event::*, Event};
 /// use keyberon::debounce::Debouncer;
-/// use keyberon::matrix::{Matrix, PressedKeys};
+/// use keyberon::matrix::Matrix;
 ///
 /// // The chord is defined by two or more locations in the layout
 /// // that correspond to a single location in the layout
@@ -29,24 +29,24 @@
 /// // A count of 30 (ms) is a good default
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
-/// pub static LAYERS: keyberon::layout::Layers = keyberon::layout::layout! {
+/// pub static LAYERS: keyberon::layout::Layers<3, 1, 1> = keyberon::layout::layout! {
 ///     { [ A B C ] }
 /// };
 ///
-/// let mut layout = Layout::new(LAYERS);
+/// let mut layout = Layout::new(&LAYERS);
 /// // Debouncer period determines chording timeout
-/// let mut debouncer: Debouncer<PressedKeys<3, 1>> =
-///     Debouncer::new(PressedKeys::default(), PressedKeys::default(), DEBOUNCE_COUNT);
+/// let mut debouncer: Debouncer<[[bool; 3]; 1]> =
+///     Debouncer::new([[false; 3]; 1], [[false; 3]; 1], DEBOUNCE_COUNT);
 /// let mut chording = Chording::new(&CHORDS);
 ///
 /// // the rest of this example should be called inside a callback
 /// // The PressedKeys are normally determined by calling the matrix
 /// // and the for loop is just to get past the debouncer
 /// for _ in 0..DEBOUNCE_COUNT {
-///     assert_eq!(0, debouncer.events(PressedKeys([[true, true, false]])).count());
+///     assert_eq!(0, debouncer.events([[true, true, false]]).count());
 /// }
 /// let mut events = chording
-///     .tick(debouncer.events(PressedKeys([[true, true, false]])).collect())
+///     .tick(debouncer.events([[true, true, false]]).collect())
 ///     .into_iter();
 /// let event = events.next();
 /// assert_eq!(Some(Event::Press(0, 2)), event);
@@ -102,11 +102,7 @@ impl Chord {
 
     fn contains_chord(&mut self, events: &[Event]) -> bool {
         for key in self.def.1 {
-            if events
-                .iter()
-                .position(|&k| (&k.coord() == key && k.is_press()))
-                .is_none()
-            {
+            if !events.iter().any(|&k| (&k.coord() == key && k.is_press())) {
                 return false;
             }
         }

@@ -1,6 +1,6 @@
 //! Keyboard HID device implementation.
 
-use crate::hid::{HidDevice, Protocol, ReportType, Subclass};
+use crate::hid::{self, HidDevice, Protocol, ReportType, Subclass};
 use crate::key_code::KbHidReport;
 
 /// A trait to manage keyboard LEDs.
@@ -103,10 +103,10 @@ impl<L: Leds> HidDevice for Keyboard<L> {
         REPORT_DESCRIPTOR
     }
 
-    fn get_report(&mut self, report_type: ReportType, _report_id: u8) -> Result<&[u8], ()> {
+    fn get_report(&mut self, report_type: ReportType, _report_id: u8) -> Result<&[u8], hid::Error> {
         match report_type {
             ReportType::Input => Ok(self.report.as_bytes()),
-            _ => Err(()),
+            _ => Err(hid::Error),
         }
     }
 
@@ -115,7 +115,7 @@ impl<L: Leds> HidDevice for Keyboard<L> {
         report_type: ReportType,
         report_id: u8,
         data: &[u8],
-    ) -> Result<(), ()> {
+    ) -> Result<(), hid::Error> {
         if report_type == ReportType::Output && report_id == 0 && data.len() == 1 {
             let d = data[0];
             self.leds.num_lock(d & 1 != 0);
@@ -125,6 +125,6 @@ impl<L: Leds> HidDevice for Keyboard<L> {
             self.leds.kana(d & 1 << 4 != 0);
             return Ok(());
         }
-        Err(())
+        Err(hid::Error)
     }
 }

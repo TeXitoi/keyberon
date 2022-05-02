@@ -15,6 +15,8 @@ USB communication.
 
 ## Projects using this firmware
 
+[List of Repositories using Keyberon](./KEYBOARDS.md)
+
 The first project using this firmware is [Keyberon
 grid](https://github.com/TeXitoi/keyberon-grid), a handwired keyboard
 with a grid of keys. It is based on the blue pill, a cheap development
@@ -64,8 +66,7 @@ keyboard (STM32F072 based).
 
 The supported features are:
  - Layers when holding a key (aka the fn key). When holding multiple
-   layer keys, the numbers add (if you have a layer 1 key and a layer
-   2 key, when holding the 2 together, the layer 3 will be active).
+   layer keys, the last pressed layer action sets the layer.
  - Transparent key, i.e. when on an alternative layer, the key will
    inherit the behavior of the default layer.
  - Change default layer dynamically.
