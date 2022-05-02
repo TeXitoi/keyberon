@@ -895,7 +895,7 @@ mod test {
 
     #[test]
     fn sequences() {
-        static LAYERS: Layers = &[&[&[
+        static LAYERS: Layers<4, 1, 1> = [[[
             Sequence {
                 // Simple Ctrl-C sequence/macro
                 events: &[
@@ -970,7 +970,7 @@ mod test {
                 ],
             },
         ]]];
-        let mut layout = Layout::new(LAYERS);
+        let mut layout = Layout::new(&LAYERS);
         // Test a basic sequence
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
