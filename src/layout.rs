@@ -889,4 +889,206 @@ mod test {
         assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());
     }
+
+    #[test]
+    fn sequences() {
+        static LAYERS: Layers = &[&[&[
+            Sequence {
+                // Simple Ctrl-C sequence/macro
+                events: &[
+                    SequenceEvent::Press(LCtrl),
+                    SequenceEvent::Press(C),
+                    SequenceEvent::Release(C),
+                    SequenceEvent::Release(LCtrl),
+                ],
+            },
+            Sequence {
+                // So we can test that Complete works
+                events: &[
+                    SequenceEvent::Press(LCtrl),
+                    SequenceEvent::Press(C),
+                    SequenceEvent::Complete,
+                ],
+            },
+            Sequence {
+                // YO with a delay in the middle
+                events: &[
+                    SequenceEvent::Press(Y),
+                    SequenceEvent::Release(Y),
+                    // "How many licks does it take to get to the center?"
+                    SequenceEvent::Delay { duration: 3 }, // Let's find out
+                    SequenceEvent::Press(O),
+                    SequenceEvent::Release(O),
+                ],
+            },
+            Sequence {
+                // A long sequence to test the chunking capability
+                events: &[
+                    SequenceEvent::Press(LShift), // Important: Shift must remain held
+                    SequenceEvent::Press(U),      // ...or the message just isn't the same!
+                    SequenceEvent::Release(U),
+                    SequenceEvent::Press(N),
+                    SequenceEvent::Release(N),
+                    SequenceEvent::Press(L),
+                    SequenceEvent::Release(L),
+                    SequenceEvent::Press(I),
+                    SequenceEvent::Release(I),
+                    SequenceEvent::Press(M),
+                    SequenceEvent::Release(M),
+                    SequenceEvent::Press(I),
+                    SequenceEvent::Release(I),
+                    SequenceEvent::Press(T),
+                    SequenceEvent::Release(T),
+                    SequenceEvent::Press(E),
+                    SequenceEvent::Release(E),
+                    SequenceEvent::Press(D),
+                    SequenceEvent::Release(D),
+                    SequenceEvent::Press(Space),
+                    SequenceEvent::Release(Space),
+                    SequenceEvent::Press(P),
+                    SequenceEvent::Release(P),
+                    SequenceEvent::Press(O),
+                    SequenceEvent::Release(O),
+                    SequenceEvent::Press(W),
+                    SequenceEvent::Release(W),
+                    SequenceEvent::Press(E),
+                    SequenceEvent::Release(E),
+                    SequenceEvent::Press(R),
+                    SequenceEvent::Release(R),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Press(Kb1),
+                    SequenceEvent::Release(Kb1),
+                    SequenceEvent::Release(LShift),
+                ],
+            },
+        ]]];
+        let mut layout = Layout::new(LAYERS);
+        // Test a basic sequence
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 0));
+        // Sequences take an extra tick to kickoff since the first tick starts the sequence:
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Sequence detected & added
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Sequence starts
+        assert_keys(&[LCtrl], layout.keycodes()); // First item in the SequenceEvent
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl, C], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        // Test the use of Complete()
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LCtrl, C], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        // Test a sequence with a Delay() (aka The Mr Owl test; duration == 3)
+        layout.event(Press(0, 2));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Y], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // First decrement (2)
+        assert_keys(&[], layout.keycodes()); // "Eh Ooone!"
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Second decrement (1)
+        assert_keys(&[], layout.keycodes()); // "Eh two!"
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Final decrement (0)
+        assert_keys(&[], layout.keycodes()); // "Eh three."
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Press() added for the next tick()
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // FakeKey Press()
+        assert_keys(&[O], layout.keycodes()); // CHOMP!
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        // // Test really long sequences (aka macros)...
+        layout.event(Press(0, 3));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, U], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, N], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, L], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, I], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, M], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, I], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, T], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, E], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, D], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, Space], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, P], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, O], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, W], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, E], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, R], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, Kb1], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, Kb1], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, Kb1], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift, Kb1], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[LShift], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+    }
 }
