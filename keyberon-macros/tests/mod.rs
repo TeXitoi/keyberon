@@ -97,3 +97,14 @@ fn test_escapes() {
     static B: Layers<2, 1, 1> = [[[k(Bslash), k(Quote)]]];
     assert_eq!(A, B);
 }
+
+#[test]
+fn test_keycode_group_comma() {
+    static A: Layers<3, 1, 1> = layout! {
+        {
+            [ C [D E] F ]
+        }
+    };
+    static B: Layers<3, 1, 1> = [[[k(C), Action::MultipleActions(&[k(D), k(E)]), k(F)]]];
+    assert_eq!(A, B);
+}
