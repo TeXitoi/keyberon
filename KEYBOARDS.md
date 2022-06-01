@@ -13,3 +13,4 @@
 | [keyboard-labs](https://github.com/rgoulter/keyboard-labs)                 | PCB              | STM32F401 | <ul><li>[x] Matrix </li><li>[x] Split</li></ul>                                                |
 | [makerdiary M60](https://github.com/jamesmunns/m60-keyboard/)              | PCB              | nRF52840  | <ul><li>[x] Matrix </li><li>[x] RGB LEDs</li> |
 | [PouetPouet](https://github.com/dkm/pouetpouet-board)                          | PCB              | STM32F072 | <ul><li>[x] Matrix </li></ul>                                                |
+| [corne](https://github.com/simmsb/keyboard)                                | PCB              | nRF52840  | <ul><li>[x] Matrix </li><li>[x] RGB LEDs</li><li>[x] OLED</li><li>[x] split</li></ul>          |
