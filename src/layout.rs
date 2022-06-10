@@ -816,7 +816,6 @@ mod test {
     #[test]
     fn custom_handler() {
         fn always_tap(_: StackedIter) -> Option<WaitingAction> {
-            std::println!("hit!");
             Some(WaitingAction::Tap)
         }
         fn always_hold(_: StackedIter) -> Option<WaitingAction> {
@@ -828,7 +827,6 @@ mod test {
         fn always_none(_: StackedIter) -> Option<WaitingAction> {
             None
         }
-        std::println!("Assigning layers");
         static LAYERS: Layers<4, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
