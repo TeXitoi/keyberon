@@ -63,6 +63,9 @@ use State::*;
 pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
     [[[Action<T>; C]; R]; L];
 
+/// The current event stack.
+///
+/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
@@ -215,19 +218,26 @@ struct WaitingState<T: 'static> {
     tap: &'static Action<T>,
     config: HoldTapConfig,
 }
-enum WaitingAction {
+
+/// Actions that can be triggered for a key configured for HoldTap.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum WaitingAction {
+    /// Trigger the holding event.
     Hold,
+    /// Trigger the tapping event.
     Tap,
+    /// Drop this event. It will act as if no key was pressed.
     NoOp,
 }
+
 impl<T> WaitingState<T> {
-    fn tick(&mut self, stacked: &Stack) -> WaitingAction {
+    fn tick(&mut self, stacked: &Stack) -> Option<WaitingAction> {
         self.timeout = self.timeout.saturating_sub(1);
         match self.config {
             HoldTapConfig::Default => (),
             HoldTapConfig::HoldOnOtherKeyPress => {
                 if stacked.iter().any(|s| s.event.is_press()) {
-                    return WaitingAction::Hold;
+                    return Some(WaitingAction::Hold);
                 }
             }
             HoldTapConfig::PermissiveHold => {
@@ -236,9 +246,14 @@ impl<T> WaitingState<T> {
                         let (i, j) = s.event.coord();
                         let target = Event::Release(i, j);
                         if stacked.iter().skip(x + 1).any(|s| s.event == target) {
-                            return WaitingAction::Hold;
+                            return Some(WaitingAction::Hold);
                         }
                     }
+                }
+            }
+            HoldTapConfig::Custom(func) => {
+                if let waiting_action @ Some(_) = (func)(StackedIter(stacked.iter())) {
+                    return waiting_action;
                 }
             }
         }
@@ -247,14 +262,14 @@ impl<T> WaitingState<T> {
             .find(|s| self.is_corresponding_release(&s.event))
         {
             if self.timeout >= self.delay - since {
-                WaitingAction::Tap
+                Some(WaitingAction::Tap)
             } else {
-                WaitingAction::Hold
+                Some(WaitingAction::Hold)
             }
         } else if self.timeout == 0 {
-            WaitingAction::Hold
+            Some(WaitingAction::Hold)
         } else {
-            WaitingAction::NoOp
+            None
         }
     }
     fn is_corresponding_release(&self, event: &Event) -> bool {
@@ -262,8 +277,24 @@ impl<T> WaitingState<T> {
     }
 }
 
+/// An iterator over the currently stacked events.
+///
+/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
+pub struct StackedIter<'a>(arraydeque::Iter<'a, Stacked>);
+
+impl<'a> Iterator for StackedIter<'a> {
+    type Item = &'a Stacked;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+/// An event, waiting in a stack to be processed.
 #[derive(Debug)]
-struct Stacked {
+pub struct Stacked {
     event: Event,
     since: u16,
 }
@@ -275,6 +306,11 @@ impl From<Event> for Stacked {
 impl Stacked {
     fn tick(&mut self) {
         self.since = self.since.saturating_add(1);
+    }
+
+    /// Get the [Event] from this object.
+    pub fn event(&self) -> Event {
+        self.event
     }
 }
 
@@ -313,6 +349,10 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             CustomEvent::NoEvent
         }
     }
+    fn drop_waiting(&mut self) -> CustomEvent<T> {
+        self.waiting = None;
+        CustomEvent::NoEvent
+    }
     /// A time event.
     ///
     /// This method must be called regularly, typically every millisecond.
@@ -324,9 +364,10 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
         self.stacked.iter_mut().for_each(Stacked::tick);
         match &mut self.waiting {
             Some(w) => match w.tick(&self.stacked) {
-                WaitingAction::Hold => self.waiting_into_hold(),
-                WaitingAction::Tap => self.waiting_into_tap(),
-                WaitingAction::NoOp => CustomEvent::NoEvent,
+                Some(WaitingAction::Hold) => self.waiting_into_hold(),
+                Some(WaitingAction::Tap) => self.waiting_into_tap(),
+                Some(WaitingAction::NoOp) => self.drop_waiting(),
+                None => CustomEvent::NoEvent,
             },
             None => match self.stacked.pop_front() {
                 Some(s) => self.unstack(s),
@@ -769,5 +810,110 @@ mod test {
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_eq!(0, layout.current_layer());
         assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn custom_handler() {
+        fn always_tap(_: StackedIter) -> Option<WaitingAction> {
+            Some(WaitingAction::Tap)
+        }
+        fn always_hold(_: StackedIter) -> Option<WaitingAction> {
+            Some(WaitingAction::Hold)
+        }
+        fn always_nop(_: StackedIter) -> Option<WaitingAction> {
+            Some(WaitingAction::NoOp)
+        }
+        fn always_none(_: StackedIter) -> Option<WaitingAction> {
+            None
+        }
+        static LAYERS: Layers<4, 1, 1> = [[[
+            HoldTap {
+                timeout: 200,
+                hold: &k(Kb1),
+                tap: &k(Kb0),
+                config: HoldTapConfig::Custom(always_tap),
+                tap_hold_interval: 0,
+            },
+            HoldTap {
+                timeout: 200,
+                hold: &k(Kb3),
+                tap: &k(Kb2),
+                config: HoldTapConfig::Custom(always_hold),
+                tap_hold_interval: 0,
+            },
+            HoldTap {
+                timeout: 200,
+                hold: &k(Kb5),
+                tap: &k(Kb4),
+                config: HoldTapConfig::Custom(always_nop),
+                tap_hold_interval: 0,
+            },
+            HoldTap {
+                timeout: 200,
+                hold: &k(Kb7),
+                tap: &k(Kb6),
+                config: HoldTapConfig::Custom(always_none),
+                tap_hold_interval: 0,
+            },
+        ]]];
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Custom handler always taps
+        layout.event(Press(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Kb0], layout.keycodes());
+
+        // nothing more
+        layout.event(Release(0, 0));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Custom handler always holds
+        layout.event(Press(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Kb3], layout.keycodes());
+
+        // nothing more
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Custom handler always prevents any event
+        layout.event(Press(0, 2));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // even timeout does not trigger
+        for _ in 0..200 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // nothing more
+        layout.event(Release(0, 2));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Custom handler timeout fallback
+        layout.event(Press(0, 3));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        for _ in 0..199 {
+            assert_eq!(CustomEvent::NoEvent, layout.tick());
+            assert_keys(&[], layout.keycodes());
+        }
+
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[Kb7], layout.keycodes());
     }
 }
