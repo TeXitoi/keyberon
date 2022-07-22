@@ -512,7 +512,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     }
 
     /// Obtain the index of the current active layer
-    fn current_layer(&self) -> usize {
+    pub fn current_layer(&self) -> usize {
         self.states
             .iter()
             .rev()
