@@ -46,7 +46,7 @@
 /// ```
 pub use keyberon_macros::*;
 
-use crate::action::{Action, HoldTapConfig};
+use crate::action::{Action, HoldTapConfig, HoldTapAction};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::Vec;
@@ -447,13 +447,13 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
         use Action::*;
         match action {
             NoOp | Trans => (),
-            HoldTap {
+            HoldTap(HoldTapAction {
                 timeout,
                 hold,
                 tap,
                 config,
                 tap_hold_interval,
-            } => {
+            }) => {
                 if *tap_hold_interval == 0
                     || coord != self.tap_hold_tracker.coord
                     || self.tap_hold_tracker.timeout == 0
@@ -550,20 +550,20 @@ mod test {
     fn basic_hold_tap() {
         static LAYERS: Layers<2, 1, 2> = [
             [[
-                HoldTap {
+                HoldTap(&HoldTapAction {
                     timeout: 200,
                     hold: &l(1),
                     tap: &k(Space),
                     config: HoldTapConfig::Default,
                     tap_hold_interval: 0,
-                },
-                HoldTap {
+                }),
+                HoldTap(&HoldTapAction {
                     timeout: 200,
                     hold: &k(LCtrl),
                     tap: &k(Enter),
                     config: HoldTapConfig::Default,
                     tap_hold_interval: 0,
-                },
+                }),
             ]],
             [[Trans, m(&[LCtrl, Enter])]],
         ];
@@ -599,20 +599,20 @@ mod test {
     #[test]
     fn hold_tap_interleaved_timeout() {
         static LAYERS: Layers<2, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 0,
-            },
-            HoldTap {
+            }),
+            HoldTap(&HoldTapAction {
                 timeout: 20,
                 hold: &k(LCtrl),
                 tap: &k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 0,
-            },
+            }),
         ]]];
         let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
@@ -646,13 +646,13 @@ mod test {
     #[test]
     fn hold_on_press() {
         static LAYERS: Layers<2, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::HoldOnOtherKeyPress,
                 tap_hold_interval: 0,
-            },
+            }),
             k(Enter),
         ]]];
         let mut layout = Layout::new(&LAYERS);
@@ -703,13 +703,13 @@ mod test {
     #[test]
     fn permissive_hold() {
         static LAYERS: Layers<2, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::PermissiveHold,
                 tap_hold_interval: 0,
-            },
+            }),
             k(Enter),
         ]]];
         let mut layout = Layout::new(&LAYERS);
@@ -862,34 +862,34 @@ mod test {
             None
         }
         static LAYERS: Layers<4, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(Kb1),
                 tap: &k(Kb0),
                 config: HoldTapConfig::Custom(always_tap),
                 tap_hold_interval: 0,
-            },
-            HoldTap {
+            }),
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(Kb3),
                 tap: &k(Kb2),
                 config: HoldTapConfig::Custom(always_hold),
                 tap_hold_interval: 0,
-            },
-            HoldTap {
+            }),
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(Kb5),
                 tap: &k(Kb4),
                 config: HoldTapConfig::Custom(always_nop),
                 tap_hold_interval: 0,
-            },
-            HoldTap {
+            }),
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(Kb7),
                 tap: &k(Kb6),
                 config: HoldTapConfig::Custom(always_none),
                 tap_hold_interval: 0,
-            },
+            }),
         ]]];
         let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
@@ -955,13 +955,13 @@ mod test {
     #[test]
     fn tap_hold_interval() {
         static LAYERS: Layers<2, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
-            },
+            }),
             k(Enter),
         ]]];
         let mut layout = Layout::new(&LAYERS);
@@ -1009,21 +1009,21 @@ mod test {
     #[test]
     fn tap_hold_interval_interleave() {
         static LAYERS: Layers<3, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
-            },
+            }),
             k(Enter),
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(LAlt),
                 tap: &k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
-            },
+            }),
         ]]];
         let mut layout = Layout::new(&LAYERS);
 
@@ -1129,13 +1129,13 @@ mod test {
 
     #[test]
     fn tap_hold_interval_short_hold() {
-        static LAYERS: Layers<1, 1, 1> = [[[HoldTap {
+        static LAYERS: Layers<1, 1, 1> = [[[HoldTap(&HoldTapAction {
             timeout: 50,
             hold: &k(LAlt),
             tap: &k(Space),
             config: HoldTapConfig::Default,
             tap_hold_interval: 200,
-        }]]];
+        })]]];
         let mut layout = Layout::new(&LAYERS);
 
         // press and hold the HT key, expect hold action
@@ -1171,20 +1171,20 @@ mod test {
     #[test]
     fn tap_hold_interval_different_hold() {
         static LAYERS: Layers<2, 1, 1> = [[[
-            HoldTap {
+            HoldTap(&HoldTapAction {
                 timeout: 50,
                 hold: &k(LAlt),
                 tap: &k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
-            },
-            HoldTap {
+            }),
+            HoldTap(&HoldTapAction {
                 timeout: 200,
                 hold: &k(RAlt),
                 tap: &k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
-            },
+            }),
         ]]];
         let mut layout = Layout::new(&LAYERS);
 

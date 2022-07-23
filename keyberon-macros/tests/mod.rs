@@ -1,5 +1,5 @@
 extern crate keyberon_macros;
-use keyberon::action::{k, l, m, Action, Action::*, HoldTapConfig};
+use keyberon::action::{k, l, m, Action, Action::*, HoldTapConfig, HoldTapAction};
 use keyberon::key_code::KeyCode::*;
 use keyberon::layout::*;
 use keyberon_macros::layout;
@@ -12,13 +12,13 @@ fn test_layout_equality() {
         };
     }
 
-    static S_ENTER: Action = Action::HoldTap {
+    static S_ENTER: Action = Action::HoldTap(&HoldTapAction {
         timeout: 280,
         hold: &Action::KeyCode(RShift),
         tap: &Action::KeyCode(Enter),
         config: HoldTapConfig::PermissiveHold,
         tap_hold_interval: 0,
-    };
+    });
 
     #[rustfmt::skip]
     pub static LAYERS_OLD: Layers<12, 4, 2> = [
