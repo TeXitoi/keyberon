@@ -245,3 +245,15 @@ pub const fn d<T>(layer: usize) -> Action<T> {
 pub const fn m<T>(kcs: &'static [KeyCode]) -> Action<T> {
     Action::MultipleKeyCodes(kcs)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::mem;
+
+    #[test]
+    fn size_of_action() {
+        const PTR_SIZE: usize = mem::size_of::<&()>();
+        assert_eq!(mem::size_of::<Action::<()>>(), 3 * PTR_SIZE);
+    }
+}
