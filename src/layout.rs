@@ -53,28 +53,86 @@ use heapless::Vec;
 
 use State::*;
 
-/// The Layers type.
-///
-/// `Layers` type is an array of layers which contain the description
-/// of actions on the switch matrix. For example `layers[1][2][3]`
-/// corresponds to the key on the first layer, row 2, column 3.
-/// The generic parameters are in order: the number of columns, rows and layers,
-/// and the type contained in custom actions.
-pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
-    [[[Action<T>; C]; R]; L];
+// /// The Layers type.
+// ///
+// /// `Layers` type is an array of layers which contain the description
+// /// of actions on the switch matrix. For example `layers[1][2][3]`
+// /// corresponds to the key on the first layer, row 2, column 3.
+// /// The generic parameters are in order: the number of columns, rows and layers,
+// /// and the type contained in custom actions.
+// pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
+//     [[[Action<T>; C]; R]; L];
 
 /// The current event stack.
 ///
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
+/// xd
+pub trait Layers<T = core::convert::Infallible> {
+    /// xd
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>>;
+    /// xd
+    fn n_layers(&self) -> usize;
+    /// xd
+    fn n_rows(&self) -> u8;
+    /// xd
+    fn n_cols(&self) -> u8;
+}
+
+impl<const C: usize, const R: usize, const L: usize, T> Layers<T> for [[[Action<T>; C]; R]; L] {
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
+        self.get(layer)
+            .and_then(|l| l.get(row as usize))
+            .and_then(|r| r.get(col as usize))
+    }
+
+    fn n_layers(&self) -> usize {
+        L
+    }
+
+    fn n_rows(&self) -> u8 {
+        R as u8
+    }
+
+    fn n_cols(&self) -> u8 {
+        C as u8
+    }
+}
+
+impl<T> Layers<T> for [&[&[Action<T>]]] {
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
+        self.get(layer)
+            .and_then(|l| l.get(row as usize))
+            .and_then(|r| r.get(col as usize))
+    }
+
+    fn n_layers(&self) -> usize {
+        self.len()
+    }
+
+    fn n_rows(&self) -> u8 {
+        self.get(0)
+            .map(|l| l.len() as u8)
+            .unwrap_or(0)
+    }
+
+    fn n_cols(&self) -> u8 {
+        self.get(0)
+            .and_then(|l| l.get(0))
+            .map(|r| r.len() as u8)
+            .unwrap_or(0)
+    }
+}
+
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
+pub struct Layout<L, T = core::convert::Infallible>
 where
     T: 'static,
+    L: Layers<T> + 'static,
 {
-    layers: &'static [[[Action<T>; C]; R]; L],
+    layers: &'static L,
     default_layer: usize,
     states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
@@ -327,9 +385,13 @@ impl TapHoldTracker {
     }
 }
 
-impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
+impl<L, T> Layout<L, T>
+where
+    T: 'static,
+    L: Layers<T> + 'static,
+{
     /// Creates a new `Layout` object.
-    pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
+    pub fn new(layers: &'static L) -> Self {
         Self {
             layers,
             default_layer: 0,
@@ -420,11 +482,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     }
     fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
         use crate::action::Action::*;
-        let action = self
-            .layers
-            .get(layer)
-            .and_then(|l| l.get(coord.0 as usize))
-            .and_then(|l| l.get(coord.1 as usize));
+        let action = self.layers.get_action(layer, coord.0, coord.1);
         match action {
             None => &NoOp,
             Some(Trans) => {
@@ -522,7 +580,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
 
     /// Sets the default layer for the layout
     pub fn set_default_layer(&mut self, value: usize) {
-        if value < self.layers.len() {
+        if value < self.layers.n_layers() {
             self.default_layer = value
         }
     }
