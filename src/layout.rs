@@ -68,19 +68,27 @@ use State::*;
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
-/// xd
-pub trait Layers<T = core::convert::Infallible> {
-    /// xd
-    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>>;
-    /// xd
+
+/// The Layers trait.
+///
+/// `Layers` conceptually is an array of layers which contain the description
+/// of actions on the switch matrix. For example `layers[1][2][3]` corresponds
+/// to the key on the first layer, row 2, column 3.
+pub trait Layers {
+    // type CustomAction = core::convert::Infallible;
+    /// Type used for the [`Action::Custom`] variant.
+    type CustomAction;
+
+    /// Retrieve the action at given `layer` for key at `(row, col)`.
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<Self::CustomAction>>;
+
+    /// Get the number of layers.
     fn n_layers(&self) -> usize;
-    /// xd
-    fn n_rows(&self) -> u8;
-    /// xd
-    fn n_cols(&self) -> u8;
 }
 
-impl<const C: usize, const R: usize, const L: usize, T> Layers<T> for [[[Action<T>; C]; R]; L] {
+impl<const C: usize, const R: usize, const L: usize, T> Layers for [[[Action<T>; C]; R]; L] {
+    type CustomAction = T;
+
     fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
         self.get(layer)
             .and_then(|l| l.get(row as usize))
@@ -90,17 +98,11 @@ impl<const C: usize, const R: usize, const L: usize, T> Layers<T> for [[[Action<
     fn n_layers(&self) -> usize {
         L
     }
-
-    fn n_rows(&self) -> u8 {
-        R as u8
-    }
-
-    fn n_cols(&self) -> u8 {
-        C as u8
-    }
 }
 
-impl<T> Layers<T> for [&[&[Action<T>]]] {
+impl<T> Layers for [&[&[Action<T>]]] {
+    type CustomAction = T;
+
     fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
         self.get(layer)
             .and_then(|l| l.get(row as usize))
@@ -110,32 +112,15 @@ impl<T> Layers<T> for [&[&[Action<T>]]] {
     fn n_layers(&self) -> usize {
         self.len()
     }
-
-    fn n_rows(&self) -> u8 {
-        self.get(0)
-            .map(|l| l.len() as u8)
-            .unwrap_or(0)
-    }
-
-    fn n_cols(&self) -> u8 {
-        self.get(0)
-            .and_then(|l| l.get(0))
-            .map(|r| r.len() as u8)
-            .unwrap_or(0)
-    }
 }
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<L, T = core::convert::Infallible>
-where
-    T: 'static,
-    L: Layers<T> + 'static,
-{
+pub struct Layout<L: Layers + 'static> {
     layers: &'static L,
     default_layer: usize,
-    states: Vec<State<T>, 64>,
-    waiting: Option<WaitingState<T>>,
+    states: Vec<State<L::CustomAction>, 64>,
+    waiting: Option<WaitingState<L::CustomAction>>,
     stacked: Stack,
     tap_hold_tracker: TapHoldTracker,
 }
@@ -385,11 +370,7 @@ impl TapHoldTracker {
     }
 }
 
-impl<L, T> Layout<L, T>
-where
-    T: 'static,
-    L: Layers<T> + 'static,
-{
+impl<L: Layers + 'static> Layout<L> {
     /// Creates a new `Layout` object.
     pub fn new(layers: &'static L) -> Self {
         Self {
@@ -405,7 +386,7 @@ where
     pub fn keycodes(&self) -> impl Iterator<Item = KeyCode> + '_ {
         self.states.iter().filter_map(State::keycode)
     }
-    fn waiting_into_hold(&mut self) -> CustomEvent<T> {
+    fn waiting_into_hold(&mut self) -> CustomEvent<L::CustomAction> {
         if let Some(w) = &self.waiting {
             let hold = w.hold;
             let coord = w.coord;
@@ -418,7 +399,7 @@ where
             CustomEvent::NoEvent
         }
     }
-    fn waiting_into_tap(&mut self) -> CustomEvent<T> {
+    fn waiting_into_tap(&mut self) -> CustomEvent<L::CustomAction> {
         if let Some(w) = &self.waiting {
             let tap = w.tap;
             let coord = w.coord;
@@ -428,7 +409,7 @@ where
             CustomEvent::NoEvent
         }
     }
-    fn drop_waiting(&mut self) -> CustomEvent<T> {
+    fn drop_waiting(&mut self) -> CustomEvent<L::CustomAction> {
         self.waiting = None;
         CustomEvent::NoEvent
     }
@@ -438,7 +419,7 @@ where
     ///
     /// Returns the corresponding `CustomEvent`, allowing to manage
     /// custom actions thanks to the `Action::Custom` variant.
-    pub fn tick(&mut self) -> CustomEvent<T> {
+    pub fn tick(&mut self) -> CustomEvent<L::CustomAction> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         self.tap_hold_tracker.tick();
@@ -455,7 +436,7 @@ where
             },
         }
     }
-    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<T> {
+    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<L::CustomAction> {
         use Event::*;
         match stacked.event {
             Release(i, j) => {
@@ -480,7 +461,7 @@ where
             self.unstack(stacked);
         }
     }
-    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
+    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<L::CustomAction> {
         use crate::action::Action::*;
         let action = self.layers.get_action(layer, coord.0, coord.1);
         match action {
@@ -497,10 +478,10 @@ where
     }
     fn do_action(
         &mut self,
-        action: &'static Action<T>,
+        action: &'static Action<L::CustomAction>,
         coord: (u8, u8),
         delay: u16,
-    ) -> CustomEvent<T> {
+    ) -> CustomEvent<L::CustomAction> {
         assert!(self.waiting.is_none());
         use Action::*;
         match action {
@@ -516,7 +497,7 @@ where
                     || coord != self.tap_hold_tracker.coord
                     || self.tap_hold_tracker.timeout == 0
                 {
-                    let waiting: WaitingState<T> = WaitingState {
+                    let waiting: WaitingState<L::CustomAction> = WaitingState {
                         coord,
                         timeout: *timeout,
                         delay,
