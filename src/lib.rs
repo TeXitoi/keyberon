@@ -15,6 +15,10 @@
 #![no_std]
 #![deny(missing_docs)]
 
+#[cfg(test)]
+#[macro_use]
+extern crate alloc;
+
 use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
 

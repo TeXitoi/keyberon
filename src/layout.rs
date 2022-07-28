@@ -25,10 +25,10 @@
 /// Example layout for a 12x4 split keyboard:
 /// ```
 /// use keyberon::action::Action;
-/// use keyberon::layout::Layers;
+/// use keyberon::layout::LayersArray;
 /// static DLAYER: Action = Action::DefaultLayer(5);
 ///
-/// pub static LAYERS: Layers<12, 4, 2> = keyberon::layout::layout! {
+/// pub static LAYERS: LayersArray<12, 4, 2> = keyberon::layout::layout! {
 ///     {
 ///         [ Tab    Q W E R T   Y U I O P BSpace ]
 ///         [ LCtrl  A S D F G   H J K L ; Quote  ]
@@ -53,31 +53,79 @@ use heapless::Vec;
 
 use State::*;
 
-/// The Layers type.
-///
-/// `Layers` type is an array of layers which contain the description
-/// of actions on the switch matrix. For example `layers[1][2][3]`
-/// corresponds to the key on the first layer, row 2, column 3.
-/// The generic parameters are in order: the number of columns, rows and layers,
-/// and the type contained in custom actions.
-pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
-    [[[Action<T>; C]; R]; L];
+// /// The Layers type.
+// ///
+// /// `Layers` type is an array of layers which contain the description
+// /// of actions on the switch matrix. For example `layers[1][2][3]`
+// /// corresponds to the key on the first layer, row 2, column 3.
+// /// The generic parameters are in order: the number of columns, rows and layers,
+// /// and the type contained in custom actions.
+// pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
+//     [[[Action<T>; C]; R]; L];
 
 /// The current event stack.
 ///
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
+/// The Layers trait.
+///
+/// `Layers` conceptually is an array of layers which contain the description
+/// of actions on the switch matrix. For example `layers[1][2][3]` corresponds
+/// to the key on the first layer, row 2, column 3.
+pub trait Layers {
+    // type CustomAction = core::convert::Infallible;
+    /// Type used for the [`Action::Custom`] variant.
+    type CustomAction;
+
+    /// Retrieve the action at given `layer` for key at `(row, col)`.
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<Self::CustomAction>>;
+
+    /// Get the number of layers.
+    fn n_layers(&self) -> usize;
+}
+
+/// Alias for defining layers as an array.
+pub type LayersArray<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> = [[[Action<T>; C]; R]; L];
+
+/// Alias for defining layers as a slice.
+pub type LayersSlice<'a, T = core::convert::Infallible> = &'a [&'a [&'a [Action<T>]]];
+
+impl<const C: usize, const R: usize, const L: usize, T> Layers for [[[Action<T>; C]; R]; L] {
+    type CustomAction = T;
+
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
+        self.get(layer)
+            .and_then(|l| l.get(row as usize))
+            .and_then(|r| r.get(col as usize))
+    }
+
+    fn n_layers(&self) -> usize {
+        L
+    }
+}
+
+impl<T> Layers for &[&[&[Action<T>]]] {
+    type CustomAction = T;
+
+    fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
+        self.get(layer)
+            .and_then(|l| l.get(row as usize))
+            .and_then(|r| r.get(col as usize))
+    }
+
+    fn n_layers(&self) -> usize {
+        self.len()
+    }
+}
+
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
-where
-    T: 'static,
-{
-    layers: &'static [[[Action<T>; C]; R]; L],
+pub struct Layout<L: Layers + 'static> {
+    layers: &'static L,
     default_layer: usize,
-    states: Vec<State<T>, 64>,
-    waiting: Option<WaitingState<T>>,
+    states: Vec<State<L::CustomAction>, 64>,
+    waiting: Option<WaitingState<L::CustomAction>>,
     stacked: Stack,
     tap_hold_tracker: TapHoldTracker,
 }
@@ -327,9 +375,9 @@ impl TapHoldTracker {
     }
 }
 
-impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
+impl<L: Layers + 'static> Layout<L> {
     /// Creates a new `Layout` object.
-    pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
+    pub fn new(layers: &'static L) -> Self {
         Self {
             layers,
             default_layer: 0,
@@ -343,7 +391,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     pub fn keycodes(&self) -> impl Iterator<Item = KeyCode> + '_ {
         self.states.iter().filter_map(State::keycode)
     }
-    fn waiting_into_hold(&mut self) -> CustomEvent<T> {
+    fn waiting_into_hold(&mut self) -> CustomEvent<L::CustomAction> {
         if let Some(w) = &self.waiting {
             let hold = w.hold;
             let coord = w.coord;
@@ -356,7 +404,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             CustomEvent::NoEvent
         }
     }
-    fn waiting_into_tap(&mut self) -> CustomEvent<T> {
+    fn waiting_into_tap(&mut self) -> CustomEvent<L::CustomAction> {
         if let Some(w) = &self.waiting {
             let tap = w.tap;
             let coord = w.coord;
@@ -366,7 +414,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             CustomEvent::NoEvent
         }
     }
-    fn drop_waiting(&mut self) -> CustomEvent<T> {
+    fn drop_waiting(&mut self) -> CustomEvent<L::CustomAction> {
         self.waiting = None;
         CustomEvent::NoEvent
     }
@@ -376,7 +424,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     ///
     /// Returns the corresponding `CustomEvent`, allowing to manage
     /// custom actions thanks to the `Action::Custom` variant.
-    pub fn tick(&mut self) -> CustomEvent<T> {
+    pub fn tick(&mut self) -> CustomEvent<L::CustomAction> {
         self.states = self.states.iter().filter_map(State::tick).collect();
         self.stacked.iter_mut().for_each(Stacked::tick);
         self.tap_hold_tracker.tick();
@@ -393,7 +441,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             },
         }
     }
-    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<T> {
+    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<L::CustomAction> {
         use Event::*;
         match stacked.event {
             Release(i, j) => {
@@ -418,13 +466,9 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             self.unstack(stacked);
         }
     }
-    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
+    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<L::CustomAction> {
         use crate::action::Action::*;
-        let action = self
-            .layers
-            .get(layer)
-            .and_then(|l| l.get(coord.0 as usize))
-            .and_then(|l| l.get(coord.1 as usize));
+        let action = self.layers.get_action(layer, coord.0, coord.1);
         match action {
             None => &NoOp,
             Some(Trans) => {
@@ -439,10 +483,10 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     }
     fn do_action(
         &mut self,
-        action: &'static Action<T>,
+        action: &'static Action<L::CustomAction>,
         coord: (u8, u8),
         delay: u16,
-    ) -> CustomEvent<T> {
+    ) -> CustomEvent<L::CustomAction> {
         assert!(self.waiting.is_none());
         use Action::*;
         match action {
@@ -458,7 +502,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
                     || coord != self.tap_hold_tracker.coord
                     || self.tap_hold_tracker.timeout == 0
                 {
-                    let waiting: WaitingState<T> = WaitingState {
+                    let waiting: WaitingState<L::CustomAction> = WaitingState {
                         coord,
                         timeout: *timeout,
                         delay,
@@ -522,7 +566,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
 
     /// Sets the default layer for the layout
     pub fn set_default_layer(&mut self, value: usize) {
-        if value < self.layers.len() {
+        if value < self.layers.n_layers() {
             self.default_layer = value
         }
     }
@@ -547,8 +591,62 @@ mod test {
     }
 
     #[test]
+    fn layers_as_array() {
+        static LAYERS: LayersArray<2, 1, 2> = [
+            [[
+                HoldTap {
+                    timeout: 200,
+                    hold: &l(1),
+                    tap: &k(Space),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+                HoldTap {
+                    timeout: 200,
+                    hold: &k(LCtrl),
+                    tap: &k(Enter),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+            ]],
+            [[Trans, m(&[LCtrl, Enter])]],
+        ];
+        assert_eq!(LAYERS.n_layers(), 2);
+        assert_eq!(LAYERS.get_action(1, 0, 0), Some(&Trans));
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+    }
+
+    #[test]
+    fn layers_as_slice() {
+        static LAYERS: LayersSlice = &[
+            &[&[
+                HoldTap {
+                    timeout: 200,
+                    hold: &l(1),
+                    tap: &k(Space),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+                HoldTap {
+                    timeout: 200,
+                    hold: &k(LCtrl),
+                    tap: &k(Enter),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+            ]],
+            &[&[Trans, m(&[LCtrl, Enter])]],
+        ];
+        assert_eq!(LAYERS.n_layers(), 2);
+        assert_eq!(LAYERS.get_action(1, 0, 0), Some(&Trans));
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+    }
+
+    #[test]
     fn basic_hold_tap() {
-        static LAYERS: Layers<2, 1, 2> = [
+        static LAYERS: LayersArray<2, 1, 2> = [
             [[
                 HoldTap {
                     timeout: 200,
@@ -598,7 +696,7 @@ mod test {
 
     #[test]
     fn hold_tap_interleaved_timeout() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -645,7 +743,7 @@ mod test {
 
     #[test]
     fn hold_on_press() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -702,7 +800,7 @@ mod test {
 
     #[test]
     fn permissive_hold() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -741,7 +839,7 @@ mod test {
 
     #[test]
     fn multiple_actions() {
-        static LAYERS: Layers<2, 1, 2> = [
+        static LAYERS: LayersArray<2, 1, 2> = [
             [[MultipleActions(&[l(1), k(LShift)]), k(F)]],
             [[Trans, k(E)]],
         ];
@@ -764,7 +862,7 @@ mod test {
 
     #[test]
     fn custom() {
-        static LAYERS: Layers<1, 1, 1, u8> = [[[Action::Custom(42)]]];
+        static LAYERS: LayersArray<1, 1, 1, u8> = [[[Action::Custom(42)]]];
         let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
@@ -786,7 +884,7 @@ mod test {
 
     #[test]
     fn multiple_layers() {
-        static LAYERS: Layers<2, 1, 4> = [
+        static LAYERS: LayersArray<2, 1, 4> = [
             [[l(1), l(2)]],
             [[k(A), l(3)]],
             [[l(0), k(B)]],
@@ -861,7 +959,7 @@ mod test {
         fn always_none(_: StackedIter) -> Option<WaitingAction> {
             None
         }
-        static LAYERS: Layers<4, 1, 1> = [[[
+        static LAYERS: LayersArray<4, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(Kb1),
@@ -954,7 +1052,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -1008,7 +1106,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_interleave() {
-        static LAYERS: Layers<3, 1, 1> = [[[
+        static LAYERS: LayersArray<3, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -1129,7 +1227,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_short_hold() {
-        static LAYERS: Layers<1, 1, 1> = [[[HoldTap {
+        static LAYERS: LayersArray<1, 1, 1> = [[[HoldTap {
             timeout: 50,
             hold: &k(LAlt),
             tap: &k(Space),
@@ -1170,7 +1268,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_different_hold() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 50,
                 hold: &k(LAlt),

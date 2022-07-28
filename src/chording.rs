@@ -29,7 +29,7 @@
 /// // A count of 30 (ms) is a good default
 /// const DEBOUNCE_COUNT: u16 = 30;
 ///
-/// pub static LAYERS: keyberon::layout::Layers<3, 1, 1> = keyberon::layout::layout! {
+/// pub static LAYERS: keyberon::layout::LayersArray<3, 1, 1> = keyberon::layout::layout! {
 ///     { [ A B C ] }
 /// };
 ///
