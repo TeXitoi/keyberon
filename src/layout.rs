@@ -25,10 +25,10 @@
 /// Example layout for a 12x4 split keyboard:
 /// ```
 /// use keyberon::action::Action;
-/// use keyberon::layout::Layers;
+/// use keyberon::layout::LayersArray;
 /// static DLAYER: Action = Action::DefaultLayer(5);
 ///
-/// pub static LAYERS: Layers<12, 4, 2> = keyberon::layout::layout! {
+/// pub static LAYERS: LayersArray<12, 4, 2> = keyberon::layout::layout! {
 ///     {
 ///         [ Tab    Q W E R T   Y U I O P BSpace ]
 ///         [ LCtrl  A S D F G   H J K L ; Quote  ]
@@ -68,7 +68,6 @@ use State::*;
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
 type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
 
-
 /// The Layers trait.
 ///
 /// `Layers` conceptually is an array of layers which contain the description
@@ -86,6 +85,12 @@ pub trait Layers {
     fn n_layers(&self) -> usize;
 }
 
+/// Alias for defining layers as an array.
+pub type LayersArray<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> = [[[Action<T>; C]; R]; L];
+
+/// Alias for defining layers as a slice.
+pub type LayersSlice<'a, T = core::convert::Infallible> = &'a [&'a [&'a [Action<T>]]];
+
 impl<const C: usize, const R: usize, const L: usize, T> Layers for [[[Action<T>; C]; R]; L] {
     type CustomAction = T;
 
@@ -100,7 +105,7 @@ impl<const C: usize, const R: usize, const L: usize, T> Layers for [[[Action<T>;
     }
 }
 
-impl<T> Layers for [&[&[Action<T>]]] {
+impl<T> Layers for &[&[&[Action<T>]]] {
     type CustomAction = T;
 
     fn get_action(&self, layer: usize, row: u8, col: u8) -> Option<&Action<T>> {
@@ -586,8 +591,62 @@ mod test {
     }
 
     #[test]
+    fn layers_as_array() {
+        static LAYERS: LayersArray<2, 1, 2> = [
+            [[
+                HoldTap {
+                    timeout: 200,
+                    hold: &l(1),
+                    tap: &k(Space),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+                HoldTap {
+                    timeout: 200,
+                    hold: &k(LCtrl),
+                    tap: &k(Enter),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+            ]],
+            [[Trans, m(&[LCtrl, Enter])]],
+        ];
+        assert_eq!(LAYERS.n_layers(), 2);
+        assert_eq!(LAYERS.get_action(1, 0, 0), Some(&Trans));
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+    }
+
+    #[test]
+    fn layers_as_slice() {
+        static LAYERS: LayersSlice = &[
+            &[&[
+                HoldTap {
+                    timeout: 200,
+                    hold: &l(1),
+                    tap: &k(Space),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+                HoldTap {
+                    timeout: 200,
+                    hold: &k(LCtrl),
+                    tap: &k(Enter),
+                    config: HoldTapConfig::Default,
+                    tap_hold_interval: 0,
+                },
+            ]],
+            &[&[Trans, m(&[LCtrl, Enter])]],
+        ];
+        assert_eq!(LAYERS.n_layers(), 2);
+        assert_eq!(LAYERS.get_action(1, 0, 0), Some(&Trans));
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+    }
+
+    #[test]
     fn basic_hold_tap() {
-        static LAYERS: Layers<2, 1, 2> = [
+        static LAYERS: LayersArray<2, 1, 2> = [
             [[
                 HoldTap {
                     timeout: 200,
@@ -637,7 +696,7 @@ mod test {
 
     #[test]
     fn hold_tap_interleaved_timeout() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -684,7 +743,7 @@ mod test {
 
     #[test]
     fn hold_on_press() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -741,7 +800,7 @@ mod test {
 
     #[test]
     fn permissive_hold() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -780,7 +839,7 @@ mod test {
 
     #[test]
     fn multiple_actions() {
-        static LAYERS: Layers<2, 1, 2> = [
+        static LAYERS: LayersArray<2, 1, 2> = [
             [[MultipleActions(&[l(1), k(LShift)]), k(F)]],
             [[Trans, k(E)]],
         ];
@@ -803,7 +862,7 @@ mod test {
 
     #[test]
     fn custom() {
-        static LAYERS: Layers<1, 1, 1, u8> = [[[Action::Custom(42)]]];
+        static LAYERS: LayersArray<1, 1, 1, u8> = [[[Action::Custom(42)]]];
         let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
@@ -825,7 +884,7 @@ mod test {
 
     #[test]
     fn multiple_layers() {
-        static LAYERS: Layers<2, 1, 4> = [
+        static LAYERS: LayersArray<2, 1, 4> = [
             [[l(1), l(2)]],
             [[k(A), l(3)]],
             [[l(0), k(B)]],
@@ -900,7 +959,7 @@ mod test {
         fn always_none(_: StackedIter) -> Option<WaitingAction> {
             None
         }
-        static LAYERS: Layers<4, 1, 1> = [[[
+        static LAYERS: LayersArray<4, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(Kb1),
@@ -993,7 +1052,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -1047,7 +1106,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_interleave() {
-        static LAYERS: Layers<3, 1, 1> = [[[
+        static LAYERS: LayersArray<3, 1, 1> = [[[
             HoldTap {
                 timeout: 200,
                 hold: &k(LAlt),
@@ -1168,7 +1227,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_short_hold() {
-        static LAYERS: Layers<1, 1, 1> = [[[HoldTap {
+        static LAYERS: LayersArray<1, 1, 1> = [[[HoldTap {
             timeout: 50,
             hold: &k(LAlt),
             tap: &k(Space),
@@ -1209,7 +1268,7 @@ mod test {
 
     #[test]
     fn tap_hold_interval_different_hold() {
-        static LAYERS: Layers<2, 1, 1> = [[[
+        static LAYERS: LayersArray<2, 1, 1> = [[[
             HoldTap {
                 timeout: 50,
                 hold: &k(LAlt),
