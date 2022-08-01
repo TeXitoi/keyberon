@@ -135,7 +135,6 @@ impl Eq for HoldTapConfig {}
 /// but whatever the configuration is, if the key is pressed more
 /// than `timeout`, the hold action is activated (if no other
 /// action was determined before).
-#[doc(inline)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct HoldTapAction<T>
 where
