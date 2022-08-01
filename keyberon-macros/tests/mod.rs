@@ -8,7 +8,7 @@ use keyberon_macros::layout;
 fn test_layout_equality() {
     macro_rules! s {
         ($k:expr) => {
-            m(&[LShift, $k])
+            m(&[LShift, $k].as_slice())
         };
     }
 
@@ -30,7 +30,7 @@ fn test_layout_equality() {
         ],
         [
             [k(Tab),    k(Kb1), k(Kb2), k(Kb3), k(Kb4), k(Kb5),   k(Kb6),  k(Kb7),  k(Kb8), k(Kb9), k(Kb0), k(BSpace)],
-            [k(LCtrl),  s!(Kb1), s!(Kb2), s!(Kb3), s!(Kb4), s!(Kb5),   s!(Kb6), s!(Kb7), s!(Kb8),  s!(Kb9), s!(Kb0), MultipleActions(&[k(LCtrl), k(Grave)])],
+            [k(LCtrl),  s!(Kb1), s!(Kb2), s!(Kb3), s!(Kb4), s!(Kb5),   s!(Kb6), s!(Kb7), s!(Kb8),  s!(Kb9), s!(Kb0), MultipleActions(&[k(LCtrl), k(Grave)].as_slice())],
             [k(LShift), NoOp, NoOp, NoOp, NoOp, NoOp,   k(Left), k(Down), k(Up), k(Right), NoOp, s!(Grave)],
             [NoOp, NoOp, k(LGui), Trans, Trans, Trans,   Trans, Trans, Trans, k(RAlt), NoOp, NoOp],
         ],
@@ -65,7 +65,7 @@ fn test_nesting() {
     };
     static B: Layers<2, 1, 1> = [[[
         k(D),
-        Action::MultipleActions(&[Action::Layer(5), Action::MultipleActions(&[k(C), k(D)])]),
+        Action::MultipleActions(&[Action::Layer(5), Action::MultipleActions(&[k(C), k(D)].as_slice())].as_slice()),
     ]]];
     assert_eq!(A, B);
 }
@@ -105,6 +105,6 @@ fn test_keycode_group_comma() {
             [ C [D E] F ]
         }
     };
-    static B: Layers<3, 1, 1> = [[[k(C), Action::MultipleActions(&[k(D), k(E)]), k(F)]]];
+    static B: Layers<3, 1, 1> = [[[k(C), Action::MultipleActions(&[k(D), k(E)].as_slice()), k(F)]]];
     assert_eq!(A, B);
 }

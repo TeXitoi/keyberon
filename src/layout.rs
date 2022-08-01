@@ -481,14 +481,14 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             }
             &MultipleKeyCodes(v) => {
                 self.tap_hold_tracker.coord = coord;
-                for &keycode in v {
+                for &keycode in *v {
                     let _ = self.states.push(NormalKey { coord, keycode });
                 }
             }
             &MultipleActions(v) => {
                 self.tap_hold_tracker.coord = coord;
                 let mut custom = CustomEvent::NoEvent;
-                for action in v {
+                for action in *v {
                     custom.update(self.do_action(action, coord, delay));
                 }
                 return custom;
@@ -565,7 +565,7 @@ mod test {
                     tap_hold_interval: 0,
                 }),
             ]],
-            [[Trans, m(&[LCtrl, Enter])]],
+            [[Trans, m(&[LCtrl, Enter].as_slice())]],
         ];
         let mut layout = Layout::new(&LAYERS);
         assert_eq!(CustomEvent::NoEvent, layout.tick());
@@ -742,7 +742,7 @@ mod test {
     #[test]
     fn multiple_actions() {
         static LAYERS: Layers<2, 1, 2> = [
-            [[MultipleActions(&[l(1), k(LShift)]), k(F)]],
+            [[MultipleActions(&[l(1), k(LShift)].as_slice()), k(F)]],
             [[Trans, k(E)]],
         ];
         let mut layout = Layout::new(&LAYERS);

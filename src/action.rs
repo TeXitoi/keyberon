@@ -185,9 +185,9 @@ where
     /// Multiple key codes sent at the same time, as if these keys
     /// were pressed at the same time. Useful to send a shifted key,
     /// or complex shortcuts like Ctrl+Alt+Del in a single key press.
-    MultipleKeyCodes(&'static [KeyCode]),
+    MultipleKeyCodes(&'static &'static [KeyCode]),
     /// Multiple actions sent at the same time.
-    MultipleActions(&'static [Action<T>]),
+    MultipleActions(&'static &'static [Action<T>]),
     /// While pressed, change the current layer. That's the classic
     /// Fn key. If several layer actions are hold at the same time,
     /// the last pressed defines the current layer.
@@ -242,7 +242,7 @@ pub const fn d<T>(layer: usize) -> Action<T> {
 
 /// A shortcut to create a `Action::MultipleKeyCodes`, useful to
 /// create compact layout.
-pub const fn m<T>(kcs: &'static [KeyCode]) -> Action<T> {
+pub const fn m<T>(kcs: &'static &'static [KeyCode]) -> Action<T> {
     Action::MultipleKeyCodes(kcs)
 }
 
@@ -254,6 +254,6 @@ mod tests {
     #[test]
     fn size_of_action() {
         const PTR_SIZE: usize = mem::size_of::<&()>();
-        assert_eq!(mem::size_of::<Action::<()>>(), 3 * PTR_SIZE);
+        assert_eq!(mem::size_of::<Action::<()>>(), 2 * PTR_SIZE);
     }
 }
