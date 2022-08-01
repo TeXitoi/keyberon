@@ -167,6 +167,36 @@ where
     pub tap_hold_interval: u16,
 }
 
+/// Define one shot key behaviour.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct OneShot<T = core::convert::Infallible>
+where
+    T: 'static,
+{
+    /// Action to activate until timeout expires or exactly one non-one-shot key is activated.
+    pub action: &'static Action<T>,
+    /// Timeout after which one shot will expire. Note: timeout will be overwritten if another
+    /// one shot key is pressed.
+    pub timeout: u16,
+    /// Configuration of one shot end behaviour. Note: this will be overwritten if another one shot
+    /// key is pressed. Consider keeping this consistent between all your one shot keys to prevent
+    /// surprising behaviour.
+    pub end_config: OneShotEndConfig,
+}
+
+/// Determine the ending behaviour of the one shot key.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum OneShotEndConfig {
+    /// End one shot activation on first non-one-shot key press.
+    EndOnFirstPress,
+    /// End one shot activation on first non-one-shot key release.
+    EndOnFirstRelease,
+}
+
+/// Defines the maximum number of one shot keys that can be combined.
+pub const ONE_SHOT_MAX_ACTIVE: usize = 8;
+
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -202,6 +232,17 @@ where
     /// to drive any non keyboard related actions that you might
     /// manage with key events.
     Custom(T),
+    /// One shot key. Also known as "sticky key". See `struct OneShot` for configuration info.
+    /// Activates `action` until a single other key that is not also a one shot key is used. For
+    /// example, a one shot key can be used to activate shift for exactly one keypress or switch to
+    /// another layer for exactly one keypress. Holding a one shot key will be treated as a normal
+    /// held keypress.
+    ///
+    /// If you use one shot outside of its intended use cases (modifier key action or layer
+    /// action) then you will likely have undesired behaviour. E.g. one shot with the space
+    /// key will hold space until either another key is pressed or the timeout occurs, which will
+    /// probably send many undesired space characters to your active application.
+    OneShot(&'static OneShot<T>),
 }
 impl<T> Action<T> {
     /// Gets the layer number if the action is the `Layer` action.
