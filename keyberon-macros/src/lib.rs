@@ -109,7 +109,7 @@ fn parse_keycode_group(input: TokenStream, out: &mut TokenStream) {
             TokenTree::Group(g) => parse_group(&g, &mut inner),
         }
     }
-    out.extend(quote! { keyberon::action::Action::MultipleActions(&[#inner]), });
+    out.extend(quote! { keyberon::action::Action::MultipleActions(&[#inner].as_slice()), });
 }
 
 fn punctuation_to_keycode(p: &Punct, out: &mut TokenStream) {
@@ -123,21 +123,21 @@ fn punctuation_to_keycode(p: &Punct, out: &mut TokenStream) {
         '/' => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Slash), }),
 
         // Shifted punctuation
-        '!' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb1]), }),
-        '@' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb2]), }),
-        '#' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb3]), }),
-        '$' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb4]), }),
-        '%' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb5]), }),
-        '^' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb6]), }),
-        '&' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb7]), }),
-        '*' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb8]), }),
-        '_' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Minus]), }),
-        '+' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Equal]), }),
-        '|' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Bslash]), }),
-        '~' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Grave]), }),
-        '<' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Comma]), }),
-        '>' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Dot]), }),
-        '?' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Slash]), }),
+        '!' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb1].as_slice()), }),
+        '@' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb2].as_slice()), }),
+        '#' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb3].as_slice()), }),
+        '$' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb4].as_slice()), }),
+        '%' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb5].as_slice()), }),
+        '^' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb6].as_slice()), }),
+        '&' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb7].as_slice()), }),
+        '*' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb8].as_slice()), }),
+        '_' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Minus].as_slice()), }),
+        '+' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Equal].as_slice()), }),
+        '|' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Bslash].as_slice()), }),
+        '~' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Grave].as_slice()), }),
+        '<' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Comma].as_slice()), }),
+        '>' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Dot].as_slice()), }),
+        '?' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Slash].as_slice()), }),
         // Is this reachable?
         _ => emit_error!(p, "Punctuation could not be parsed as a keycode")
     }
@@ -164,12 +164,12 @@ fn literal_to_keycode(l: &Literal, out: &mut TokenStream) {
         "'['" => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::LBracket), }),
         "']'" => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::RBracket), }),
         "'`'" => out.extend(quote! { keyberon::action::Action::KeyCode(keyberon::key_code::KeyCode::Grave), }),
-        "'\"'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Quote]), }),
-        "'('" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb9]), }),
-        "')'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb0]), }),
-        "'{'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::LBracket]), }),
-        "'}'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::RBracket]), }),
-        "'_'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Minus]), }),
+        "'\"'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Quote].as_slice()), }),
+        "'('" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb9].as_slice()), }),
+        "')'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Kb0].as_slice()), }),
+        "'{'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::LBracket].as_slice()), }),
+        "'}'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::RBracket].as_slice()), }),
+        "'_'" => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Minus].as_slice()), }),
 
         s if s.starts_with('\'') => emit_error!(l, "Literal could not be parsed as a keycode"; help = "Maybe try without quotes?"),
 

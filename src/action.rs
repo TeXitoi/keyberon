@@ -47,7 +47,7 @@ pub enum HoldTapConfig {
     /// on the same side of the keyboard (but does not prevent multiple hold
     /// events).
     /// ```
-    /// use keyberon::action::{Action, HoldTapConfig};
+    /// use keyberon::action::{Action, HoldTapConfig, HoldTapAction};
     /// use keyberon::key_code::KeyCode;
     /// use keyberon::layout::{StackedIter, WaitingAction, Event};
     ///
@@ -71,23 +71,23 @@ pub enum HoldTapConfig {
     ///
     /// // Assuming a standard QWERTY layout, the left shift hold action will
     /// // not be triggered when pressing Tab-T, CapsLock-G, nor Shift-B.
-    /// const A_SHIFT: Action = Action::HoldTap {
+    /// const A_SHIFT: Action = Action::HoldTap(&HoldTapAction {
     ///     timeout: 200,
-    ///     hold: &Action::KeyCode(KeyCode::LShift),
-    ///     tap: &Action::KeyCode(KeyCode::A),
+    ///     hold: Action::KeyCode(KeyCode::LShift),
+    ///     tap: Action::KeyCode(KeyCode::A),
     ///     config: HoldTapConfig::Custom(left_mod),
     ///     tap_hold_interval: 0,
-    /// };
+    /// });
     ///
     /// // Assuming a standard QWERTY layout, the right shift hold action will
     /// // not be triggered when pressing Y-Pipe, H-Enter, nor N-Shift.
-    /// const SEMI_SHIFT: Action = Action::HoldTap {
+    /// const SEMI_SHIFT: Action = Action::HoldTap(&HoldTapAction {
     ///     timeout: 200,
-    ///     hold: &Action::KeyCode(KeyCode::RShift),
-    ///     tap: &Action::KeyCode(KeyCode::SColon),
+    ///     hold: Action::KeyCode(KeyCode::RShift),
+    ///     tap: Action::KeyCode(KeyCode::SColon),
     ///     config: HoldTapConfig::Custom(right_mod),
     ///     tap_hold_interval: 0,
-    /// };
+    /// });
     /// ```
     Custom(fn(StackedIter) -> Option<WaitingAction>),
 }
@@ -122,6 +122,51 @@ impl PartialEq for HoldTapConfig {
 
 impl Eq for HoldTapConfig {}
 
+/// Perform different actions on key hold/tap.
+///
+/// If the key is held more than `timeout` ticks (usually
+/// milliseconds), performs the `hold` action, else performs the
+/// `tap` action.  Mostly used with a modifier for the hold action
+/// and a normal key on the tap action. Any action can be
+/// performed, but using a `HoldTap` in a `HoldTap` is not
+/// specified (but guaranteed to not crash).
+///
+/// Different behaviors can be configured using the config field,
+/// but whatever the configuration is, if the key is pressed more
+/// than `timeout`, the hold action is activated (if no other
+/// action was determined before).
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub struct HoldTapAction<T>
+where
+    T: 'static,
+{
+    /// The duration, in ticks (usually milliseconds) giving the
+    /// difference between a hold and a tap.
+    pub timeout: u16,
+    /// The hold action.
+    pub hold: Action<T>,
+    /// The tap action.
+    pub tap: Action<T>,
+    /// Behavior configuration.
+    pub config: HoldTapConfig,
+    /// Configuration of the tap and hold holds the tap action.
+    ///
+    /// If you press and release the key in such a way that the tap
+    /// action is performed, and then press it again in less than
+    /// `tap_hold_interval` ticks, the tap action will
+    /// be held. This allows the tap action to be held by
+    /// pressing, releasing and holding the key, allowing the computer
+    /// to auto repeat the tap behavior. The timeout starts on the
+    /// first press of the key, NOT on the release.
+    ///
+    /// Pressing a different key in between will not result in the
+    /// behaviour described above; the HoldTap key must be pressed twice
+    /// in a row.
+    ///
+    /// To deactivate the functionality, set this to 0.
+    pub tap_hold_interval: u16,
+}
+
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -139,53 +184,17 @@ where
     /// Multiple key codes sent at the same time, as if these keys
     /// were pressed at the same time. Useful to send a shifted key,
     /// or complex shortcuts like Ctrl+Alt+Del in a single key press.
-    MultipleKeyCodes(&'static [KeyCode]),
+    MultipleKeyCodes(&'static &'static [KeyCode]),
     /// Multiple actions sent at the same time.
-    MultipleActions(&'static [Action<T>]),
+    MultipleActions(&'static &'static [Action<T>]),
     /// While pressed, change the current layer. That's the classic
     /// Fn key. If several layer actions are hold at the same time,
     /// the last pressed defines the current layer.
     Layer(usize),
     /// Change the default layer.
     DefaultLayer(usize),
-    /// If the key is held more than `timeout` ticks (usually
-    /// milliseconds), performs the `hold` action, else performs the
-    /// `tap` action.  Mostly used with a modifier for the hold action
-    /// and a normal key on the tap action. Any action can be
-    /// performed, but using a `HoldTap` in a `HoldTap` is not
-    /// specified (but guaranteed to not crash).
-    ///
-    /// Different behaviors can be configured using the config field,
-    /// but whatever the configuration is, if the key is pressed more
-    /// than `timeout`, the hold action is activated (if no other
-    /// action was determined before).
-    HoldTap {
-        /// The duration, in ticks (usually milliseconds) giving the
-        /// difference between a hold and a tap.
-        timeout: u16,
-        /// The hold action.
-        hold: &'static Action<T>,
-        /// The tap action.
-        tap: &'static Action<T>,
-        /// Behavior configuration.
-        config: HoldTapConfig,
-        /// Configuration of the tap and hold holds the tap action.
-        ///
-        /// If you press and release the key in such a way that the tap
-        /// action is performed, and then press it again in less than
-        /// `tap_hold_interval` ticks, the tap action will
-        /// be held. This allows the tap action to be held by
-        /// pressing, releasing and holding the key, allowing the computer
-        /// to auto repeat the tap behavior. The timeout starts on the
-        /// first press of the key, NOT on the release.
-        ///
-        /// Pressing a different key in between will not result in the
-        /// behaviour described above; the HoldTap key must be pressed twice
-        /// in a row.
-        ///
-        /// To deactivate the functionality, set this to 0.
-        tap_hold_interval: u16,
-    },
+    /// Perform different actions on key hold/tap (see [`HoldTapAction`]).
+    HoldTap(&'static HoldTapAction<T>),
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you
@@ -232,6 +241,18 @@ pub const fn d<T>(layer: usize) -> Action<T> {
 
 /// A shortcut to create a `Action::MultipleKeyCodes`, useful to
 /// create compact layout.
-pub const fn m<T>(kcs: &'static [KeyCode]) -> Action<T> {
+pub const fn m<T>(kcs: &'static &'static [KeyCode]) -> Action<T> {
     Action::MultipleKeyCodes(kcs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::mem;
+
+    #[test]
+    fn size_of_action() {
+        const PTR_SIZE: usize = mem::size_of::<&()>();
+        assert_eq!(mem::size_of::<Action::<()>>(), 2 * PTR_SIZE);
+    }
 }
