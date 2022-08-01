@@ -552,15 +552,15 @@ mod test {
             [[
                 HoldTap(&HoldTapAction {
                     timeout: 200,
-                    hold: &l(1),
-                    tap: &k(Space),
+                    hold: l(1),
+                    tap: k(Space),
                     config: HoldTapConfig::Default,
                     tap_hold_interval: 0,
                 }),
                 HoldTap(&HoldTapAction {
                     timeout: 200,
-                    hold: &k(LCtrl),
-                    tap: &k(Enter),
+                    hold: k(LCtrl),
+                    tap: k(Enter),
                     config: HoldTapConfig::Default,
                     tap_hold_interval: 0,
                 }),
@@ -601,15 +601,15 @@ mod test {
         static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 0,
             }),
             HoldTap(&HoldTapAction {
                 timeout: 20,
-                hold: &k(LCtrl),
-                tap: &k(Enter),
+                hold: k(LCtrl),
+                tap: k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 0,
             }),
@@ -648,8 +648,8 @@ mod test {
         static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::HoldOnOtherKeyPress,
                 tap_hold_interval: 0,
             }),
@@ -705,8 +705,8 @@ mod test {
         static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::PermissiveHold,
                 tap_hold_interval: 0,
             }),
@@ -864,29 +864,29 @@ mod test {
         static LAYERS: Layers<4, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(Kb1),
-                tap: &k(Kb0),
+                hold: k(Kb1),
+                tap: k(Kb0),
                 config: HoldTapConfig::Custom(always_tap),
                 tap_hold_interval: 0,
             }),
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(Kb3),
-                tap: &k(Kb2),
+                hold: k(Kb3),
+                tap: k(Kb2),
                 config: HoldTapConfig::Custom(always_hold),
                 tap_hold_interval: 0,
             }),
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(Kb5),
-                tap: &k(Kb4),
+                hold: k(Kb5),
+                tap: k(Kb4),
                 config: HoldTapConfig::Custom(always_nop),
                 tap_hold_interval: 0,
             }),
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(Kb7),
-                tap: &k(Kb6),
+                hold: k(Kb7),
+                tap: k(Kb6),
                 config: HoldTapConfig::Custom(always_none),
                 tap_hold_interval: 0,
             }),
@@ -957,8 +957,8 @@ mod test {
         static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
             }),
@@ -1011,16 +1011,16 @@ mod test {
         static LAYERS: Layers<3, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
             }),
             k(Enter),
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(LAlt),
-                tap: &k(Enter),
+                hold: k(LAlt),
+                tap: k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
             }),
@@ -1131,8 +1131,8 @@ mod test {
     fn tap_hold_interval_short_hold() {
         static LAYERS: Layers<1, 1, 1> = [[[HoldTap(&HoldTapAction {
             timeout: 50,
-            hold: &k(LAlt),
-            tap: &k(Space),
+            hold: k(LAlt),
+            tap: k(Space),
             config: HoldTapConfig::Default,
             tap_hold_interval: 200,
         })]]];
@@ -1173,15 +1173,15 @@ mod test {
         static LAYERS: Layers<2, 1, 1> = [[[
             HoldTap(&HoldTapAction {
                 timeout: 50,
-                hold: &k(LAlt),
-                tap: &k(Space),
+                hold: k(LAlt),
+                tap: k(Space),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
             }),
             HoldTap(&HoldTapAction {
                 timeout: 200,
-                hold: &k(RAlt),
-                tap: &k(Enter),
+                hold: k(RAlt),
+                tap: k(Enter),
                 config: HoldTapConfig::Default,
                 tap_hold_interval: 200,
             }),

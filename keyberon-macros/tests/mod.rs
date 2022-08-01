@@ -14,8 +14,8 @@ fn test_layout_equality() {
 
     static S_ENTER: Action = Action::HoldTap(&HoldTapAction {
         timeout: 280,
-        hold: &Action::KeyCode(RShift),
-        tap: &Action::KeyCode(Enter),
+        hold: Action::KeyCode(RShift),
+        tap: Action::KeyCode(Enter),
         config: HoldTapConfig::PermissiveHold,
         tap_hold_interval: 0,
     });

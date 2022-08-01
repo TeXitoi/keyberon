@@ -73,8 +73,8 @@ pub enum HoldTapConfig {
     /// // not be triggered when pressing Tab-T, CapsLock-G, nor Shift-B.
     /// const A_SHIFT: Action = Action::HoldTap(&HoldTapAction {
     ///     timeout: 200,
-    ///     hold: &Action::KeyCode(KeyCode::LShift),
-    ///     tap: &Action::KeyCode(KeyCode::A),
+    ///     hold: Action::KeyCode(KeyCode::LShift),
+    ///     tap: Action::KeyCode(KeyCode::A),
     ///     config: HoldTapConfig::Custom(left_mod),
     ///     tap_hold_interval: 0,
     /// });
@@ -83,8 +83,8 @@ pub enum HoldTapConfig {
     /// // not be triggered when pressing Y-Pipe, H-Enter, nor N-Shift.
     /// const SEMI_SHIFT: Action = Action::HoldTap(&HoldTapAction {
     ///     timeout: 200,
-    ///     hold: &Action::KeyCode(KeyCode::RShift),
-    ///     tap: &Action::KeyCode(KeyCode::SColon),
+    ///     hold: Action::KeyCode(KeyCode::RShift),
+    ///     tap: Action::KeyCode(KeyCode::SColon),
     ///     config: HoldTapConfig::Custom(right_mod),
     ///     tap_hold_interval: 0,
     /// });
@@ -145,9 +145,9 @@ where
     /// difference between a hold and a tap.
     pub timeout: u16,
     /// The hold action.
-    pub hold: &'static Action<T>,
+    pub hold: Action<T>,
     /// The tap action.
-    pub tap: &'static Action<T>,
+    pub tap: Action<T>,
     /// Behavior configuration.
     pub config: HoldTapConfig,
     /// Configuration of the tap and hold holds the tap action.
