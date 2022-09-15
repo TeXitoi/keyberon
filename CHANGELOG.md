@@ -7,6 +7,7 @@
 * Add max_packet_size() to HidDevice to allow differing report sizes
 * Allows default layer to be set on a Layout externally
 * Add Chording for multiple keys pressed at the same time to equal another key
+* Allow any type to be used as keycode (provided they are `'static` and implement Copy)
 
 Breaking changes:
 * Row and Column pins are now a simple array. For the STM32 MCU, you
