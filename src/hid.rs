@@ -120,6 +120,16 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         }
     }
 
+    pub fn new_with_polling_interval(device: D, alloc: &UsbBusAllocator<B>, interval: u8) -> HidClass<'_, B, D> {
+        let max_packet_size = device.max_packet_size();
+        HidClass {
+            device,
+            interface: alloc.interface(),
+            endpoint_interrupt_in: alloc.interrupt(max_packet_size, interval),
+            expect_interrupt_in_complete: false,
+        }
+    }
+
     pub fn device_mut(&mut self) -> &mut D {
         &mut self.device
     }
