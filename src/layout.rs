@@ -46,7 +46,7 @@
 /// ```
 pub use keyberon_macros::*;
 
-use crate::action::{Action, HoldTapConfig, HoldTapAction};
+use crate::action::{Action, HoldTapAction, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
 use heapless::Vec;
@@ -63,10 +63,10 @@ use State::*;
 pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
     [[[Action<T>; C]; R]; L];
 
-/// The current event stack.
+/// The current event queue.
 ///
-/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
-type Stack = ArrayDeque<[Stacked; 16], arraydeque::behavior::Wrapping>;
+/// Events can be retrieved by iterating over this struct and calling [Queued::event].
+type Queue = ArrayDeque<[Queued; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
@@ -78,7 +78,7 @@ where
     default_layer: usize,
     states: Vec<State<T>, 64>,
     waiting: Option<WaitingState<T>>,
-    stacked: Stack,
+    queued: Queue,
     tap_hold_tracker: TapHoldTracker,
 }
 
@@ -232,33 +232,33 @@ pub enum WaitingAction {
 }
 
 impl<T> WaitingState<T> {
-    fn tick(&mut self, stacked: &Stack) -> Option<WaitingAction> {
+    fn tick(&mut self, queued: &Queue) -> Option<WaitingAction> {
         self.timeout = self.timeout.saturating_sub(1);
         match self.config {
             HoldTapConfig::Default => (),
             HoldTapConfig::HoldOnOtherKeyPress => {
-                if stacked.iter().any(|s| s.event.is_press()) {
+                if queued.iter().any(|s| s.event.is_press()) {
                     return Some(WaitingAction::Hold);
                 }
             }
             HoldTapConfig::PermissiveHold => {
-                for (x, s) in stacked.iter().enumerate() {
+                for (x, s) in queued.iter().enumerate() {
                     if s.event.is_press() {
                         let (i, j) = s.event.coord();
                         let target = Event::Release(i, j);
-                        if stacked.iter().skip(x + 1).any(|s| s.event == target) {
+                        if queued.iter().skip(x + 1).any(|s| s.event == target) {
                             return Some(WaitingAction::Hold);
                         }
                     }
                 }
             }
             HoldTapConfig::Custom(func) => {
-                if let waiting_action @ Some(_) = (func)(StackedIter(stacked.iter())) {
+                if let waiting_action @ Some(_) = (func)(QueuedIter(queued.iter())) {
                     return waiting_action;
                 }
             }
         }
-        if let Some(&Stacked { since, .. }) = stacked
+        if let Some(&Queued { since, .. }) = queued
             .iter()
             .find(|s| self.is_corresponding_release(&s.event))
         {
@@ -278,13 +278,13 @@ impl<T> WaitingState<T> {
     }
 }
 
-/// An iterator over the currently stacked events.
+/// An iterator over the currently queued events.
 ///
-/// Events can be retrieved by iterating over this struct and calling [Stacked::event].
-pub struct StackedIter<'a>(arraydeque::Iter<'a, Stacked>);
+/// Events can be retrieved by iterating over this struct and calling [Queued::event].
+pub struct QueuedIter<'a>(arraydeque::Iter<'a, Queued>);
 
-impl<'a> Iterator for StackedIter<'a> {
-    type Item = &'a Stacked;
+impl<'a> Iterator for QueuedIter<'a> {
+    type Item = &'a Queued;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
     }
@@ -293,18 +293,18 @@ impl<'a> Iterator for StackedIter<'a> {
     }
 }
 
-/// An event, waiting in a stack to be processed.
+/// An event, waiting in a queue to be processed.
 #[derive(Debug)]
-pub struct Stacked {
+pub struct Queued {
     event: Event,
     since: u16,
 }
-impl From<Event> for Stacked {
+impl From<Event> for Queued {
     fn from(event: Event) -> Self {
-        Stacked { event, since: 0 }
+        Queued { event, since: 0 }
     }
 }
-impl Stacked {
+impl Queued {
     fn tick(&mut self) {
         self.since = self.since.saturating_add(1);
     }
@@ -335,7 +335,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             default_layer: 0,
             states: Vec::new(),
             waiting: None,
-            stacked: ArrayDeque::new(),
+            queued: ArrayDeque::new(),
             tap_hold_tracker: Default::default(),
         }
     }
@@ -378,24 +378,24 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     /// custom actions thanks to the `Action::Custom` variant.
     pub fn tick(&mut self) -> CustomEvent<T> {
         self.states = self.states.iter().filter_map(State::tick).collect();
-        self.stacked.iter_mut().for_each(Stacked::tick);
+        self.queued.iter_mut().for_each(Queued::tick);
         self.tap_hold_tracker.tick();
         match &mut self.waiting {
-            Some(w) => match w.tick(&self.stacked) {
+            Some(w) => match w.tick(&self.queued) {
                 Some(WaitingAction::Hold) => self.waiting_into_hold(),
                 Some(WaitingAction::Tap) => self.waiting_into_tap(),
                 Some(WaitingAction::NoOp) => self.drop_waiting(),
                 None => CustomEvent::NoEvent,
             },
-            None => match self.stacked.pop_front() {
-                Some(s) => self.unstack(s),
+            None => match self.queued.pop_front() {
+                Some(s) => self.resolve_queued_event(s),
                 None => CustomEvent::NoEvent,
             },
         }
     }
-    fn unstack(&mut self, stacked: Stacked) -> CustomEvent<T> {
+    fn resolve_queued_event(&mut self, queued: Queued) -> CustomEvent<T> {
         use Event::*;
-        match stacked.event {
+        match queued.event {
             Release(i, j) => {
                 let mut custom = CustomEvent::NoEvent;
                 self.states = self
@@ -407,15 +407,15 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             }
             Press(i, j) => {
                 let action = self.press_as_action((i, j), self.current_layer());
-                self.do_action(action, (i, j), stacked.since)
+                self.do_action(action, (i, j), queued.since)
             }
         }
     }
     /// Register a key event.
     pub fn event(&mut self, event: Event) {
-        if let Some(stacked) = self.stacked.push_back(event.into()) {
+        if let Some(queued) = self.queued.push_back(event.into()) {
             self.waiting_into_hold();
-            self.unstack(stacked);
+            self.resolve_queued_event(queued);
         }
     }
     fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
@@ -849,16 +849,16 @@ mod test {
 
     #[test]
     fn custom_handler() {
-        fn always_tap(_: StackedIter) -> Option<WaitingAction> {
+        fn always_tap(_: QueuedIter) -> Option<WaitingAction> {
             Some(WaitingAction::Tap)
         }
-        fn always_hold(_: StackedIter) -> Option<WaitingAction> {
+        fn always_hold(_: QueuedIter) -> Option<WaitingAction> {
             Some(WaitingAction::Hold)
         }
-        fn always_nop(_: StackedIter) -> Option<WaitingAction> {
+        fn always_nop(_: QueuedIter) -> Option<WaitingAction> {
             Some(WaitingAction::NoOp)
         }
-        fn always_none(_: StackedIter) -> Option<WaitingAction> {
+        fn always_none(_: QueuedIter) -> Option<WaitingAction> {
             None
         }
         static LAYERS: Layers<4, 1, 1> = [[[
