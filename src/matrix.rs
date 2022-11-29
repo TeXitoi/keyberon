@@ -52,7 +52,10 @@ where
     ///
     /// Every row pin in order is pulled low, and then each column
     /// pin is tested; if it's low, the key is marked as pressed.
-    pub fn get<E>(&mut self) -> Result<[[bool; CS]; RS], E>
+    /// Scans the pins and checks which keys are pressed (state is "low").
+    ///
+    /// Delay function allows pause to let input pins settle
+    pub fn get_with_delay<F: FnMut(), E>(&mut self, mut delay: F) -> Result<[[bool; CS]; RS], E>
     where
         C: InputPin<Error = E>,
         R: OutputPin<Error = E>,
@@ -61,6 +64,7 @@ where
 
         for (ri, row) in (&mut self.rows).iter_mut().enumerate() {
             row.set_low()?;
+            delay();
             for (ci, col) in (&self.cols).iter().enumerate() {
                 if col.is_low()? {
                     keys[ri][ci] = true;
@@ -69,6 +73,19 @@ where
             row.set_high()?;
         }
         Ok(keys)
+    }
+
+    /// Scans the matrix and checks which keys are pressed.
+    ///
+    /// Every row pin in order is pulled low, and then each column
+    /// pin is tested; if it's low, the key is marked as pressed.
+    /// Scans the pins and checks which keys are pressed (state is "low").
+    pub fn get<E>(&mut self) -> Result<[[bool; CS]; RS], E>
+    where
+        C: InputPin<Error = E>,
+        R: OutputPin<Error = E>,
+    {
+        self.get_with_delay(|| ())
     }
 }
 
