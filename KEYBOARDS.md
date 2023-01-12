@@ -15,3 +15,5 @@
 | [PouetPouet](https://github.com/dkm/pouetpouet-board)                          | PCB              | STM32F072 | <ul><li>[x] Matrix </li></ul>                                                |
 | [corne](https://github.com/simmsb/keyboard)                                | PCB              | nRF52840  | <ul><li>[x] Matrix </li><li>[x] RGB LEDs</li><li>[x] OLED</li><li>[x] split</li></ul>          |
 | [Cantor](https://github.com/dariogoetz/cantor-firmware-keyberon)           | PCB              | STM32F401 | <ul><li>[x] Matrix </li><li>[ ] LEDs</li><li>[x] Split</li><li>[x] Diodeless</li></ul>         |
+| [ErgoNICE](https://codeberg.org/valpackett/ergonice)                       | PCB              | STM32L151 | <ul><li>[x] Matrix </li><li>[x] Rotary Encoder</li><li>[x] Split</li></ul>                     |
+  
