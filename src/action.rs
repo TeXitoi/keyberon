@@ -136,17 +136,18 @@ impl Eq for HoldTapConfig {}
 /// than `timeout`, the hold action is activated (if no other
 /// action was determined before).
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct HoldTapAction<T>
+pub struct HoldTapAction<T, K>
 where
     T: 'static,
+    K: 'static,
 {
     /// The duration, in ticks (usually milliseconds) giving the
     /// difference between a hold and a tap.
     pub timeout: u16,
     /// The hold action.
-    pub hold: Action<T>,
+    pub hold: Action<T, K>,
     /// The tap action.
-    pub tap: Action<T>,
+    pub tap: Action<T, K>,
     /// Behavior configuration.
     pub config: HoldTapConfig,
     /// Configuration of the tap and hold holds the tap action.
@@ -170,9 +171,10 @@ where
 /// The different actions that can be done.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Action<T = core::convert::Infallible>
+pub enum Action<T = core::convert::Infallible, K = KeyCode>
 where
     T: 'static,
+    K: 'static,
 {
     /// No operation action: just do nothing.
     NoOp,
@@ -180,13 +182,13 @@ where
     /// the default layer, it is equivalent to `NoOp`.
     Trans,
     /// A key code, i.e. a classic key.
-    KeyCode(KeyCode),
+    KeyCode(K),
     /// Multiple key codes sent at the same time, as if these keys
     /// were pressed at the same time. Useful to send a shifted key,
     /// or complex shortcuts like Ctrl+Alt+Del in a single key press.
-    MultipleKeyCodes(&'static &'static [KeyCode]),
+    MultipleKeyCodes(&'static &'static [K]),
     /// Multiple actions sent at the same time.
-    MultipleActions(&'static &'static [Action<T>]),
+    MultipleActions(&'static &'static [Action<T, K>]),
     /// While pressed, change the current layer. That's the classic
     /// Fn key. If several layer actions are hold at the same time,
     /// the last pressed defines the current layer.
@@ -194,7 +196,7 @@ where
     /// Change the default layer.
     DefaultLayer(usize),
     /// Perform different actions on key hold/tap (see [`HoldTapAction`]).
-    HoldTap(&'static HoldTapAction<T>),
+    HoldTap(&'static HoldTapAction<T, K>),
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you
@@ -203,7 +205,7 @@ where
     /// manage with key events.
     Custom(T),
 }
-impl<T> Action<T> {
+impl<T, K: Clone> Action<T, K> {
     /// Gets the layer number if the action is the `Layer` action.
     pub fn layer(self) -> Option<usize> {
         match self {
@@ -212,7 +214,7 @@ impl<T> Action<T> {
         }
     }
     /// Returns an iterator on the `KeyCode` corresponding to the action.
-    pub fn key_codes(&self) -> impl Iterator<Item = KeyCode> + '_ {
+    pub fn key_codes(&self) -> impl Iterator<Item = K> + '_ {
         match self {
             Action::KeyCode(kc) => core::slice::from_ref(kc).iter().cloned(),
             Action::MultipleKeyCodes(kcs) => kcs.iter().cloned(),
@@ -223,25 +225,25 @@ impl<T> Action<T> {
 
 /// A shortcut to create a `Action::KeyCode`, useful to create compact
 /// layout.
-pub const fn k<T>(kc: KeyCode) -> Action<T> {
+pub const fn k<T, K>(kc: K) -> Action<T, K> {
     Action::KeyCode(kc)
 }
 
 /// A shortcut to create a `Action::Layer`, useful to create compact
 /// layout.
-pub const fn l<T>(layer: usize) -> Action<T> {
+pub const fn l<T, K>(layer: usize) -> Action<T, K> {
     Action::Layer(layer)
 }
 
 /// A shortcut to create a `Action::DefaultLayer`, useful to create compact
 /// layout.
-pub const fn d<T>(layer: usize) -> Action<T> {
+pub const fn d<T, K>(layer: usize) -> Action<T, K> {
     Action::DefaultLayer(layer)
 }
 
 /// A shortcut to create a `Action::MultipleKeyCodes`, useful to
 /// create compact layout.
-pub const fn m<T>(kcs: &'static &'static [KeyCode]) -> Action<T> {
+pub const fn m<T, K>(kcs: &'static &'static [K]) -> Action<T, K> {
     Action::MultipleKeyCodes(kcs)
 }
 
@@ -253,6 +255,6 @@ mod tests {
     #[test]
     fn size_of_action() {
         const PTR_SIZE: usize = mem::size_of::<&()>();
-        assert_eq!(mem::size_of::<Action::<()>>(), 2 * PTR_SIZE);
+        assert_eq!(mem::size_of::<Action::<(), ()>>(), 2 * PTR_SIZE);
     }
 }
