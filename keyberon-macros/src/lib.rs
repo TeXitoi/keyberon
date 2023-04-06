@@ -138,6 +138,7 @@ fn punctuation_to_keycode(p: &Punct, out: &mut TokenStream) {
         '<' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Comma].as_slice()), }),
         '>' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Dot].as_slice()), }),
         '?' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::Slash].as_slice()), }),
+        ':' => out.extend(quote! { keyberon::action::Action::MultipleKeyCodes(&[keyberon::key_code::KeyCode::LShift, keyberon::key_code::KeyCode::SColon].as_slice()), }),
         // Is this reachable?
         _ => emit_error!(p, "Punctuation could not be parsed as a keycode")
     }
