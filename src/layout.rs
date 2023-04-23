@@ -599,7 +599,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
                 }
                 return custom;
             }
-            Sequence { events } => {
+            Sequence(events) => {
                 self.active_sequences.push_back(SequenceState {
                     cur_event: None,
                     delay: 0,
@@ -1347,37 +1347,40 @@ mod test {
     #[test]
     fn sequences() {
         static LAYERS: Layers<4, 1, 1> = [[[
-            Sequence {
+            Sequence(
                 // Simple Ctrl-C sequence/macro
-                events: &[
+                &[
                     SequenceEvent::Press(LCtrl),
                     SequenceEvent::Press(C),
                     SequenceEvent::Release(C),
                     SequenceEvent::Release(LCtrl),
-                ],
-            },
-            Sequence {
+                ]
+                .as_slice(),
+            ),
+            Sequence(
                 // So we can test that Complete works
-                events: &[
+                &[
                     SequenceEvent::Press(LCtrl),
                     SequenceEvent::Press(C),
                     SequenceEvent::Complete,
-                ],
-            },
-            Sequence {
+                ]
+                .as_slice(),
+            ),
+            Sequence(
                 // YO with a delay in the middle
-                events: &[
+                &[
                     SequenceEvent::Press(Y),
                     SequenceEvent::Release(Y),
                     // "How many licks does it take to get to the center?"
                     SequenceEvent::Delay { duration: 3 }, // Let's find out
                     SequenceEvent::Press(O),
                     SequenceEvent::Release(O),
-                ],
-            },
-            Sequence {
+                ]
+                .as_slice(),
+            ),
+            Sequence(
                 // A long sequence to test the chunking capability
-                events: &[
+                &[
                     SequenceEvent::Press(LShift), // Important: Shift must remain held
                     SequenceEvent::Press(U),      // ...or the message just isn't the same!
                     SequenceEvent::Release(U),
@@ -1418,8 +1421,9 @@ mod test {
                     SequenceEvent::Press(Kb1),
                     SequenceEvent::Release(Kb1),
                     SequenceEvent::Release(LShift),
-                ],
-            },
+                ]
+                .as_slice(),
+            ),
         ]]];
         let mut layout = Layout::new(&LAYERS);
         // Test a basic sequence
