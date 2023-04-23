@@ -220,10 +220,10 @@ where
     /// Perform different actions on key hold/tap (see [`HoldTapAction`]).
     HoldTap(&'static HoldTapAction<T, K>),
     /// A sequence of SequenceEvents
-    Sequence {
+    Sequence(
         /// An array of SequenceEvents that will be triggered (in order)
-        events: &'static [SequenceEvent<K>],
-    },
+        &'static &'static [SequenceEvent<K>],
+    ),
     /// Cancels any running sequences
     CancelSequences,
     /// Custom action.
