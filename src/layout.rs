@@ -152,9 +152,10 @@ impl Event {
 }
 
 /// Event from custom action.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub enum CustomEvent<T: 'static> {
     /// No custom action.
+    #[default]
     NoEvent,
     /// The given custom action key is pressed.
     Press(&'static T),
@@ -173,11 +174,6 @@ impl<T> CustomEvent<T> {
             (Press(_), NoEvent) => *self = e,
             _ => (),
         }
-    }
-}
-impl<T> Default for CustomEvent<T> {
-    fn default() -> Self {
-        CustomEvent::NoEvent
     }
 }
 
