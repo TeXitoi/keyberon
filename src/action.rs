@@ -138,8 +138,8 @@ impl Eq for HoldTapConfig {}
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct HoldTapAction<T, K>
 where
-    T: 'static,
-    K: 'static,
+    T: 'static + Debug,
+    K: 'static + Debug,
 {
     /// The duration, in ticks (usually milliseconds) giving the
     /// difference between a hold and a tap.
@@ -173,8 +173,8 @@ where
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action<T = core::convert::Infallible, K = KeyCode>
 where
-    T: 'static,
-    K: 'static,
+    T: 'static + Debug,
+    K: 'static + Debug,
 {
     /// No operation action: just do nothing.
     NoOp,
@@ -205,7 +205,7 @@ where
     /// manage with key events.
     Custom(T),
 }
-impl<T, K: Clone> Action<T, K> {
+impl<T: Debug, K: Clone + Debug> Action<T, K> {
     /// Gets the layer number if the action is the `Layer` action.
     pub fn layer(self) -> Option<usize> {
         match self {
@@ -225,25 +225,41 @@ impl<T, K: Clone> Action<T, K> {
 
 /// A shortcut to create a `Action::KeyCode`, useful to create compact
 /// layout.
-pub const fn k<T, K>(kc: K) -> Action<T, K> {
+pub const fn k<T, K>(kc: K) -> Action<T, K>
+where
+    T: Debug,
+    K: Debug,
+{
     Action::KeyCode(kc)
 }
 
 /// A shortcut to create a `Action::Layer`, useful to create compact
 /// layout.
-pub const fn l<T, K>(layer: usize) -> Action<T, K> {
+pub const fn l<T, K>(layer: usize) -> Action<T, K>
+where
+    T: Debug,
+    K: Debug,
+{
     Action::Layer(layer)
 }
 
 /// A shortcut to create a `Action::DefaultLayer`, useful to create compact
 /// layout.
-pub const fn d<T, K>(layer: usize) -> Action<T, K> {
+pub const fn d<T, K>(layer: usize) -> Action<T, K>
+where
+    T: Debug,
+    K: Debug,
+{
     Action::DefaultLayer(layer)
 }
 
 /// A shortcut to create a `Action::MultipleKeyCodes`, useful to
 /// create compact layout.
-pub const fn m<T, K>(kcs: &'static &'static [K]) -> Action<T, K> {
+pub const fn m<T, K>(kcs: &'static &'static [K]) -> Action<T, K>
+where
+    T: Debug,
+    K: Debug,
+{
     Action::MultipleKeyCodes(kcs)
 }
 
