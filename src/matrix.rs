@@ -1,6 +1,9 @@
 //! Hardware pin switch matrix handling.
 
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+#[cfg(feature = "eh1")]
+use embedded_hal_1::digital::{InputPin, OutputPin};
+#[cfg(not(feature = "eh1"))]
+use embedded_hal_02::digital::v2::{InputPin, OutputPin};
 
 /// Describes the hardware-level matrix of switches.
 ///

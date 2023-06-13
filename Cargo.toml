@@ -11,10 +11,14 @@ categories = ["embedded", "no-std"]
 license = "MIT"
 readme = "README.md"
 
+[features]
+eh1 = ["dep:embedded-hal-1"]
+
 [dependencies]
 keyberon-macros = { version = "0.1.0", path = "./keyberon-macros" }
 either = { version = "1.6", default-features = false }
-embedded-hal = { version = "0.2", features = ["unproven"] }
+embedded-hal-02 = { package = "embedded-hal", version = "0.2", features = ["unproven"] }
+embedded-hal-1 = { package = "embedded-hal", version = "=1.0.0-alpha.10", optional = true }
 usb-device = "0.2"
 heapless = "0.7"
 arraydeque = { version = "0.4.5", default-features = false }
