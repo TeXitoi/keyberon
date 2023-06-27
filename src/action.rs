@@ -224,8 +224,6 @@ where
         /// An array of SequenceEvents that will be triggered (in order)
         &'static &'static [SequenceEvent<K>],
     ),
-    /// Cancels any running sequences
-    CancelSequences,
     /// Custom action.
     ///
     /// Define a user defined action. This enum can be anything you

@@ -607,19 +607,6 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
                     remaining_events: events,
                 });
             }
-            CancelSequences => {
-                // Clear any and all running sequences then clean up any leftover FakeKey events
-                self.active_sequences.clear();
-                for fake_key in self.states.clone().iter() {
-                    if let FakeKey { keycode } = *fake_key {
-                        self.states = self
-                            .states
-                            .iter()
-                            .filter_map(|s| s.seq_release(keycode))
-                            .collect();
-                    }
-                }
-            }
             &Layer(value) => {
                 self.tap_hold_tracker.coord = coord;
                 let _ = self.states.push(LayerModifier { value, coord });
