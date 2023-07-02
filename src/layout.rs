@@ -1333,7 +1333,7 @@ mod test {
 
     #[test]
     fn sequences() {
-        static LAYERS: Layers<5, 1, 1> = [[[
+        static LAYERS: Layers<6, 1, 1> = [[[
             Sequence(
                 // Simple Ctrl-C sequence/macro
                 &[
@@ -1416,6 +1416,14 @@ mod test {
                     SequenceEvent::Tap(Q),
                     SequenceEvent::Tap(W),
                     SequenceEvent::Tap(E),
+                ]
+                .as_slice(),
+            ),
+            Sequence(
+                &[
+                    SequenceEvent::Tap(X),
+                    SequenceEvent::Tap(Y),
+                    SequenceEvent::Tap(Z),
                 ]
                 .as_slice(),
             ),
@@ -1582,6 +1590,33 @@ mod test {
         assert_keys(&[], layout.keycodes());
         layout.event(Release(0, 4));
         assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+
+        // Test two sequences
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 5));
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Sequence detected & added
+        assert_keys(&[], layout.keycodes());
+        layout.event(Press(0, 4));
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Tap(X)
+        assert_keys(&[X], layout.keycodes());
+        layout.event(Release(0, 5));
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Release(X), Tap(Q)
+        assert_keys(&[Q], layout.keycodes());
+        layout.event(Release(0, 4));
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Tap(Y), Release(Q)
+        assert_keys(&[Y], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Release(Y), Press(W)
+        assert_keys(&[W], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Press(Z), Release(W)
+        assert_keys(&[Z], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Release(Z), Press(E)
+        assert_keys(&[E], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Release(E)
+        assert_keys(&[], layout.keycodes());
+        assert_eq!(CustomEvent::NoEvent, layout.tick()); // Sequence is
+                                                         // finished
         assert_keys(&[], layout.keycodes());
     }
 }
