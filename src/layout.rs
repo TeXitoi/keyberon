@@ -335,7 +335,17 @@ struct SequenceState<K: 'static> {
     delay: u32,
     /// Keycode of a key that should be released at the next tick
     tapped: Option<K>,
+}
 
+impl<K: Copy> Default for SequenceState<K> {
+    fn default() -> Self {
+        Self {
+            cur_event: None,
+            remaining_events: &[],
+            delay: 0,
+            tapped: None,
+        }
+    }
 }
 
 /// An event, waiting in a stack to be processed.
@@ -619,10 +629,8 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
             }
             Sequence(events) => {
                 self.active_sequences.push_back(SequenceState {
-                    cur_event: None,
-                    delay: 0,
-                    tapped: None,
                     remaining_events: events,
+                    ..Default::default()
                 });
             }
             &Layer(value) => {
