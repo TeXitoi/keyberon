@@ -183,10 +183,22 @@ impl<T> CustomEvent<T> {
 
 #[derive(Debug, Eq, PartialEq)]
 enum State<T: 'static, K: 'static + Copy> {
-    NormalKey { keycode: K, coord: (u8, u8) },
-    LayerModifier { value: usize, coord: (u8, u8) },
-    Custom { value: &'static T, coord: (u8, u8) },
-    FakeKey { keycode: K }, // Fake key event for sequences
+    NormalKey {
+        keycode: K,
+        coord: (u8, u8),
+    },
+    LayerModifier {
+        value: usize,
+        coord: (u8, u8),
+    },
+    Custom {
+        value: &'static T,
+        coord: (u8, u8),
+    },
+    /// Fake key event for sequences
+    FakeKey {
+        keycode: K,
+    },
 }
 impl<T: 'static, K: 'static + Copy> Copy for State<T, K> {}
 impl<T: 'static, K: 'static + Copy> Clone for State<T, K> {
@@ -215,6 +227,7 @@ impl<T: 'static, K: 'static + Copy + Eq> State<T, K> {
             _ => Some(*self),
         }
     }
+    /// Return whether the state is a [`State::FakeKey`] with keycode `kc`.
     fn seq_release(&self, kc: K) -> Option<Self> {
         match *self {
             FakeKey { keycode, .. } if keycode == kc => None,
@@ -314,10 +327,15 @@ impl<'a> Iterator for StackedIter<'a> {
 
 #[derive(Debug, Copy, Clone)]
 struct SequenceState<K: 'static> {
+    /// Current event being processed
     cur_event: Option<SequenceEvent<K>>,
-    delay: u32,        // Keeps track of SequenceEvent::Delay time remaining
-    tapped: Option<K>, // Keycode of a key that should be released at the next tick
+    /// Remaining events to process
     remaining_events: &'static [SequenceEvent<K>],
+    /// Keeps track of SequenceEvent::Delay time remaining
+    delay: u32,
+    /// Keycode of a key that should be released at the next tick
+    tapped: Option<K>,
+
 }
 
 /// An event, waiting in a stack to be processed.
