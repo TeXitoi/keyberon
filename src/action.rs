@@ -7,7 +7,7 @@ use core::fmt::Debug;
 /// The different types of actions we support for key sequences/macros
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum SequenceEvent<K> {
+pub enum SequenceEvent<K: 'static> {
     /// No operation action: just do nothing (a placeholder).
     NoOp,
     /// A keypress/keydown
@@ -24,6 +24,10 @@ pub enum SequenceEvent<K> {
     /// Cancels the running sequence and can be used to mark the end of a sequence
     /// instead of using a number of Release() events
     Complete,
+    /// If those keys are pressed, release them
+    Filter(&'static &'static [K]),
+    /// Restore keys if they were previously Filter-ed
+    Restore,
 }
 
 /// Behavior configuration of HoldTap.
