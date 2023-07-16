@@ -64,6 +64,7 @@ handwired](https://camo.githubusercontent.com/4fca994ac2b7c1b1874d4331c2428cac21
 ## Features
 
 The supported features are:
+
  - Layers when holding a key (aka the fn key). When holding multiple layer keys,
    the last pressed layer action sets the layer.
  - Transparent key, i.e. when on an alternative layer, the key will inherit the
@@ -76,7 +77,6 @@ The supported features are:
  - hold tap: different action depending if the key is held or tapped. For
    example, you can have a key acting as layer change when held, and space when
    tapped.
-
 
 ## FAQ
 
