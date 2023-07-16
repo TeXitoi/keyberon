@@ -1,13 +1,13 @@
 # Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon) [![](https://img.shields.io/crates/v/keyberon.svg)](https://crates.io/crates/keyberon) [![](https://docs.rs/keyberon/badge.svg)](https://docs.rs/keyberon)
 
-A rust crate to create a pure rust keyboard firmware.
+A Rust crate to create a pure Rust keyboard firmware.
 
 It is exposed as a library giving you the different building blocks to create a
 featureful keyboard firmware. As the different functionality are interconected
 by the user of the crate, you can use only the parts you are interested in or
 easily insert your own code in between.
 
-This crate is a no_std crate, running on stable rust. To use it on a given MCU,
+This crate is a no_std crate, running on stable Rust. To use it on a given MCU,
 you need GPIO throw the [embedded hal
 crate](https://crates.io/crates/embedded-hal) to read the key states, and the
 [usb-device crate](https://crates.io/crates/usb-device) for USB communication.
@@ -82,7 +82,7 @@ The supported features are:
 
 ### Keyberon, what's that name?
 
-To find new, findable and memorable project names, some persons in the rust
+To find new, findable and memorable project names, some persons in the Rust
 community try to mix the name of a city with some keyword related to the
 project. For example, you have the [Tokio project](https://tokio.rs/) that
 derive its name from the Japanese capital Tokyo and IO for Input Output, the
