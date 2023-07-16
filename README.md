@@ -65,18 +65,18 @@ handwired](https://camo.githubusercontent.com/4fca994ac2b7c1b1874d4331c2428cac21
 
 The supported features are:
 
- - Layers when holding a key (aka the fn key). When holding multiple layer keys,
-   the last pressed layer action sets the layer.
- - Transparent key, i.e. when on an alternative layer, the key will inherit the
-   behavior of the default layer.
- - Change default layer dynamically.
- - Multiple keys sent on an single key press. It allows to have keys for complex
-   shortcut, for example a key for copy and paste or alt tab, or for whatever
-   you want.
- - Chording multiple keys together to act as a single key
- - hold tap: different action depending if the key is held or tapped. For
-   example, you can have a key acting as layer change when held, and space when
-   tapped.
+- Layers when holding a key (aka the fn key). When holding multiple layer keys,
+  the last pressed layer action sets the layer.
+- Transparent key, i.e. when on an alternative layer, the key will inherit the
+  behavior of the default layer.
+- Change default layer dynamically.
+- Multiple keys sent on an single key press. It allows to have keys for complex
+  shortcut, for example a key for copy and paste or alt tab, or for whatever you
+  want.
+- Chording multiple keys together to act as a single key
+- hold tap: different action depending if the key is held or tapped. For
+  example, you can have a key acting as layer change when held, and space when
+  tapped.
 
 ## FAQ
 
