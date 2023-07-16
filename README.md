@@ -1,6 +1,7 @@
 # Keyberon [![Build status](https://travis-ci.org/TeXitoi/keyberon.svg?branch=master)](https://travis-ci.org/TeXitoi/keyberon) [![](https://img.shields.io/crates/v/keyberon.svg)](https://crates.io/crates/keyberon) [![](https://docs.rs/keyberon/badge.svg)](https://docs.rs/keyberon)
 
-A Rust crate to create a pure Rust keyboard firmware.
+A [Rust](https://www.rust-lang.org) crate to create a pure Rust keyboard
+firmware.
 
 It is exposed as a library giving you the different building blocks to create a
 featureful keyboard firmware. As the different functionality are interconected
