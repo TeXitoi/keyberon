@@ -75,6 +75,7 @@ impl<T: PartialEq> Debouncer<T> {
     ///
     /// ```
     /// use keyberon::debounce::Debouncer;
+    /// use keyberon::debounce::transpose;
     /// use keyberon::layout::Event;
     /// let mut debouncer = Debouncer::new(
     ///     [[false, false], [false, false]],
@@ -83,24 +84,46 @@ impl<T: PartialEq> Debouncer<T> {
     /// );
     ///
     /// // no changes
-    /// assert_eq!(0, debouncer.events([[false, false], [false, false]]).count());
+    /// assert_eq!(0, debouncer.events([[false, false], [false, false]], None).count());
     ///
     /// // `(0, 1)` pressed, but debouncer is filtering
-    /// assert_eq!(0, debouncer.events([[false, true], [false, false]]).count());
-    /// assert_eq!(0, debouncer.events([[false, true], [false, false]]).count());
+    /// assert_eq!(0, debouncer.events([[false, true], [false, false]], None).count());
+    /// assert_eq!(0, debouncer.events([[false, true], [false, false]], None).count());
     ///
     /// // `(0, 1)` stable enough, event appear.
     /// assert_eq!(
     ///     vec![Event::Press(0, 1)],
-    ///     debouncer.events([[false, true], [false, false]]).collect::<Vec<_>>(),
+    ///     debouncer.events([[false, true], [false, false]], None).collect::<Vec<_>>(),
+    /// );
+    /// /// Again, but with transposed event output
+    /// let mut debouncer = Debouncer::new(
+    ///     [[false, false], [false, false]],
+    ///     [[false, false], [false, false]],
+    ///     2,
+    /// );
+    /// // `(0, 1)` pressed, but debouncer is filtering
+    /// assert_eq!(0, debouncer.events([[false, true], [false, false]], None).count());
+    /// assert_eq!(0, debouncer.events([[false, true], [false, false]], None).count());
+    ///
+    /// // `(0, 1)` stable enough, event appear.
+    /// assert_eq!(
+    ///     vec![Event::Press(1, 0)],
+    ///     debouncer.events([[false, true], [false, false]], Some(transpose)).collect::<Vec<_>>(),
     /// );
     /// ```
-    pub fn events<'a, U>(&'a mut self, new: T) -> impl Iterator<Item = Event> + 'a
+    pub fn events<'a, U>(
+        &'a mut self,
+        new: T,
+        transform: Option<fn(u8, u8) -> (u8, u8)>,
+    ) -> impl Iterator<Item = Event> + 'a
     where
         &'a T: IntoIterator<Item = U>,
         U: IntoIterator<Item = &'a bool>,
         U::IntoIter: 'a,
     {
+        let noop_xform: fn(u8, u8) -> (u8, u8) = |x, y| (x, y);
+        let transform = transform.unwrap_or(noop_xform);
+
         if self.update(new) {
             Left(
                 self.new
@@ -109,10 +132,14 @@ impl<T: PartialEq> Debouncer<T> {
                     .enumerate()
                     .flat_map(move |(i, (o, n))| {
                         o.into_iter().zip(n.into_iter()).enumerate().filter_map(
-                            move |(j, bools)| match bools {
-                                (false, true) => Some(Event::Press(i as u8, j as u8)),
-                                (true, false) => Some(Event::Release(i as u8, j as u8)),
-                                _ => None,
+                            move |(j, bools)| {
+                                let (row, col) = transform(i as u8, j as u8);
+
+                                match bools {
+                                    (false, true) => Some(Event::Press(row, col)),
+                                    (true, false) => Some(Event::Release(row, col)),
+                                    _ => None,
+                                }
                             },
                         )
                     }),
@@ -121,4 +148,13 @@ impl<T: PartialEq> Debouncer<T> {
             Right(core::iter::empty())
         }
     }
+}
+
+/// If your inputs are as rows, and outputs are the columns, use this in `Debouncer::events`
+pub fn standard(row: u8, col: u8) -> (u8, u8) {
+    (row, col)
+}
+/// If your inputs are as columns, and outputs are the rows, use this in `Debouncer::events`
+pub fn transpose(row: u8, col: u8) -> (u8, u8) {
+    (col, row)
 }

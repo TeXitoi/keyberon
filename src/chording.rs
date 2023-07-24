@@ -43,10 +43,10 @@
 /// // The PressedKeys are normally determined by calling the matrix
 /// // and the for loop is just to get past the debouncer
 /// for _ in 0..DEBOUNCE_COUNT {
-///     assert_eq!(0, debouncer.events([[true, true, false]]).count());
+///     assert_eq!(0, debouncer.events([[true, true, false]], None).count());
 /// }
 /// let mut events = chording
-///     .tick(debouncer.events([[true, true, false]]).collect())
+///     .tick(debouncer.events([[true, true, false]], None).collect())
 ///     .into_iter();
 /// let event = events.next();
 /// assert_eq!(Some(Event::Press(0, 2)), event);

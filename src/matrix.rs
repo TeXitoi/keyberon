@@ -11,81 +11,70 @@ use embedded_hal::digital::v2::{InputPin, OutputPin};
 /// numbers etc.). Most HAL-s have a method of downgrading pins
 /// to a common (erased) struct. (for example see
 /// [stm32f0xx_hal::gpio::PA0::downgrade](https://docs.rs/stm32f0xx-hal/0.17.1/stm32f0xx_hal/gpio/gpioa/struct.PA0.html#method.downgrade))
-pub struct Matrix<C, R, const CS: usize, const RS: usize>
+#[allow(non_upper_case_globals)]
+pub struct Matrix<I, O, const InN: usize, const OutN: usize>
 where
-    C: InputPin,
-    R: OutputPin,
+    I: InputPin,
+    O: OutputPin,
 {
-    cols: [C; CS],
-    rows: [R; RS],
+    ins: [I; InN],
+    outs: [O; OutN],
 }
 
-impl<C, R, const CS: usize, const RS: usize> Matrix<C, R, CS, RS>
+#[allow(non_upper_case_globals)]
+impl<I, O, const InN: usize, const OutN: usize, E> Matrix<I, O, InN, OutN>
 where
-    C: InputPin,
-    R: OutputPin,
+    I: InputPin<Error = E>,
+    O: OutputPin<Error = E>,
 {
     /// Creates a new Matrix.
     ///
     /// Assumes columns are pull-up inputs,
     /// and rows are output pins which are set high when not being scanned.
-    pub fn new<E>(cols: [C; CS], rows: [R; RS]) -> Result<Self, E>
+    pub fn new(ins: [I; InN], outs: [O; OutN]) -> Result<Self, E>
     where
-        C: InputPin<Error = E>,
-        R: OutputPin<Error = E>,
+        I: InputPin<Error = E>,
+        O: OutputPin<Error = E>,
     {
-        let mut res = Self { cols, rows };
+        let mut res = Self { ins, outs };
         res.clear()?;
         Ok(res)
     }
-    fn clear<E>(&mut self) -> Result<(), E>
+    fn clear(&mut self) -> Result<(), E>
     where
-        C: InputPin<Error = E>,
-        R: OutputPin<Error = E>,
+        I: InputPin<Error = E>,
+        O: OutputPin<Error = E>,
     {
-        for r in self.rows.iter_mut() {
+        for r in self.outs.iter_mut() {
             r.set_high()?;
         }
         Ok(())
     }
-    /// Scans the matrix and checks which keys are pressed.
-    ///
-    /// Every row pin in order is pulled low, and then each column
-    /// pin is tested; if it's low, the key is marked as pressed.
-    /// Scans the pins and checks which keys are pressed (state is "low").
-    ///
-    /// Delay function allows pause to let input pins settle
-    pub fn get_with_delay<F: FnMut(), E>(&mut self, mut delay: F) -> Result<[[bool; CS]; RS], E>
-    where
-        C: InputPin<Error = E>,
-        R: OutputPin<Error = E>,
-    {
-        let mut keys = [[false; CS]; RS];
 
-        for (ri, row) in self.rows.iter_mut().enumerate() {
-            row.set_low()?;
-            delay();
-            for (ci, col) in self.cols.iter().enumerate() {
-                if col.is_low()? {
-                    keys[ri][ci] = true;
-                }
-            }
-            row.set_high()?;
-        }
-        Ok(keys)
+    /// For each out-pin, sets it to lo-then-high. If an input follows this cycle, then
+    /// we can deduce that the key connecting these two pins is pressed
+    pub fn down_keys(&mut self) -> Result<[[bool; InN]; OutN], E> {
+        self.down_keys_with_delay(|| ())
     }
 
-    /// Scans the matrix and checks which keys are pressed.
-    ///
-    /// Every row pin in order is pulled low, and then each column
-    /// pin is tested; if it's low, the key is marked as pressed.
-    /// Scans the pins and checks which keys are pressed (state is "low").
-    pub fn get<E>(&mut self) -> Result<[[bool; CS]; RS], E>
-    where
-        C: InputPin<Error = E>,
-        R: OutputPin<Error = E>,
-    {
-        self.get_with_delay(|| ())
+    /// Same as `down_keys`, with a delay following the set_low() to allow the switch to settle
+    pub fn down_keys_with_delay<F: FnMut()>(
+        &mut self,
+        mut delay: F,
+    ) -> Result<[[bool; InN]; OutN], E> {
+        let mut keys = [[false; InN]; OutN];
+
+        for (out_idx, out_pin) in self.outs.iter_mut().enumerate() {
+            out_pin.set_low()?;
+            delay();
+            for (in_idx, in_pin) in self.ins.iter().enumerate() {
+                if in_pin.is_low()? {
+                    keys[out_idx][in_idx] = true;
+                }
+            }
+            out_pin.set_high()?;
+        }
+        Ok(keys)
     }
 }
 
