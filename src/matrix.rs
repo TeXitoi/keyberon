@@ -22,6 +22,26 @@ where
 }
 
 #[allow(non_upper_case_globals)]
+trait MatrixGet<const ColCount: usize, const RowCount: usize, E> {
+    /// Scans the matrix and checks which keys are pressed.
+    ///
+    /// Every row pin in order is pulled low, and then each column
+    /// pin is tested; if it's low, the key is marked as pressed.
+    /// Scans the pins and checks which keys are pressed (state is "low").
+    fn down_keys(&mut self) -> Result<[[bool; ColCount]; RowCount], E>
+    {
+        self.down_keys_with_delay(|| ())
+    }
+    /// Scans the matrix and checks which keys are pressed.
+    ///
+    /// Every row pin in order is pulled low, and then each column
+    /// pin is tested; if it's low, the key is marked as pressed.
+    /// Scans the pins and checks which keys are pressed (state is "low").
+    ///
+    /// Delay function allows pause to let input pins settle
+    fn down_keys_with_delay<F: FnMut()>(&mut self, delay: F) -> Result<[[bool; ColCount]; RowCount], E>;
+}
+#[allow(non_upper_case_globals)]
 impl<I, O, const InN: usize, const OutN: usize> Matrix<I, O, InN, OutN>
 where
     I: InputPin,
@@ -50,19 +70,17 @@ where
         }
         Ok(())
     }
-    /// Scans the matrix and checks which keys are pressed.
-    ///
-    /// Every row pin in order is pulled low, and then each column
-    /// pin is tested; if it's low, the key is marked as pressed.
-    /// Scans the pins and checks which keys are pressed (state is "low").
-    ///
-    /// Delay function allows pause to let input pins settle
-    pub fn get_with_delay<F: FnMut(), E>(&mut self, mut delay: F) -> Result<[[bool; InN]; OutN], E>
-    where
-        I: InputPin<Error = E>,
-        O: OutputPin<Error = E>,
+}
+
+#[allow(non_upper_case_globals)]
+impl<I, O, const CS: usize, const RS: usize, E> MatrixGet<CS, RS, E> for Matrix<I, O, CS, RS>
+where
+    I: InputPin<Error = E>,
+    O: OutputPin<Error= E>,
+{
+    fn down_keys_with_delay<F: FnMut()>(&mut self, mut delay: F) -> Result<[[bool; CS]; RS], E>
     {
-        let mut keys = [[false; InN]; OutN];
+        let mut keys = [[false; CS]; RS];
 
         for (out_idx, out_pin) in self.outs.iter_mut().enumerate() {
             out_pin.set_low()?;
@@ -77,18 +95,6 @@ where
         Ok(keys)
     }
 
-    /// Scans the matrix and checks which keys are pressed.
-    ///
-    /// Every row pin in order is pulled low, and then each column
-    /// pin is tested; if it's low, the key is marked as pressed.
-    /// Scans the pins and checks which keys are pressed (state is "low").
-    pub fn get<E>(&mut self) -> Result<[[bool; InN]; OutN], E>
-    where
-        I: InputPin<Error = E>,
-        O: OutputPin<Error = E>,
-    {
-        self.get_with_delay(|| ())
-    }
 }
 
 /// Matrix-representation of switches directly attached to the pins ("diodeless").
