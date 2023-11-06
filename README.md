@@ -34,7 +34,7 @@ kit](https://cannonkeys.com/collections/frontpage/products/ortho60)
 Another handwired project using keyberon is
 [keyberon-f4](https://github.com/TeXitoi/keyberon-f4), a unsplitted
 ergo keyboard. It runs on a [WeAct
-MiniF4](https://github.com/WeActTC/MiniF4-STM32F4x1) based on a
+MiniF4](https://github.com/WeActStudio/WeActStudio.MiniSTM32F4x1) based on a
 STM32F401 MCU.
 
 ![keyberon-f4](https://raw.githubusercontent.com/TeXitoi/keyberon-f4/master/images/keyberon-44.jpg)
@@ -49,7 +49,7 @@ grid, blue pill based):
 ![gilescope's](https://i.redd.it/syvlwmkd77851.jpg)
 
 [covah901](https://www.reddit.com/user/covah901/)'s keyboard ([WeAct
-MiniF4](https://github.com/WeActTC/MiniF4-STM32F4x1) based):
+MiniF4](https://github.com/WeActStudio/WeActStudio.MiniSTM32F4x1) based):
 
 ![covah901](https://i.redd.it/gnkfymu0gwo41.jpg)
 

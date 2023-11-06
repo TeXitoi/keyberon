@@ -60,8 +60,13 @@ use State::*;
 /// corresponds to the key on the first layer, row 2, column 3.
 /// The generic parameters are in order: the number of columns, rows and layers,
 /// and the type contained in custom actions.
-pub type Layers<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible> =
-    [[[Action<T>; C]; R]; L];
+pub type Layers<
+    const C: usize,
+    const R: usize,
+    const L: usize,
+    T = core::convert::Infallible,
+    K = KeyCode,
+> = [[[Action<T, K>; C]; R]; L];
 
 /// The current event queue.
 ///
@@ -70,14 +75,20 @@ type Queue = ArrayDeque<[Queued; 16], arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
-pub struct Layout<const C: usize, const R: usize, const L: usize, T = core::convert::Infallible>
-where
+pub struct Layout<
+    const C: usize,
+    const R: usize,
+    const L: usize,
+    T = core::convert::Infallible,
+    K = KeyCode,
+> where
     T: 'static,
+    K: 'static + Copy,
 {
-    layers: &'static [[[Action<T>; C]; R]; L],
+    layers: &'static [[[Action<T, K>; C]; R]; L],
     default_layer: usize,
-    states: Vec<State<T>, 64>,
-    waiting: Option<WaitingState<T>>,
+    states: Vec<State<T, K>, 64>,
+    waiting: Option<WaitingState<T, K>>,
     queued: Queue,
     tap_hold_tracker: TapHoldTracker,
 }
@@ -141,9 +152,10 @@ impl Event {
 }
 
 /// Event from custom action.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub enum CustomEvent<T: 'static> {
     /// No custom action.
+    #[default]
     NoEvent,
     /// The given custom action key is pressed.
     Press(&'static T),
@@ -164,26 +176,22 @@ impl<T> CustomEvent<T> {
         }
     }
 }
-impl<T> Default for CustomEvent<T> {
-    fn default() -> Self {
-        CustomEvent::NoEvent
-    }
-}
 
 #[derive(Debug, Eq, PartialEq)]
-enum State<T: 'static> {
-    NormalKey { keycode: KeyCode, coord: (u8, u8) },
+enum State<T: 'static, K: 'static + Copy> {
+    NormalKey { keycode: K, coord: (u8, u8) },
     LayerModifier { value: usize, coord: (u8, u8) },
     Custom { value: &'static T, coord: (u8, u8) },
 }
-impl<T> Copy for State<T> {}
-impl<T> Clone for State<T> {
+impl<T: 'static, K: 'static + Copy> Copy for State<T, K> {}
+impl<T: 'static, K: 'static + Copy> Clone for State<T, K> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<T: 'static> State<T> {
-    fn keycode(&self) -> Option<KeyCode> {
+
+impl<T: 'static, K: 'static + Copy> State<T, K> {
+    fn keycode(&self) -> Option<K> {
         match self {
             NormalKey { keycode, .. } => Some(*keycode),
             _ => None,
@@ -211,12 +219,12 @@ impl<T: 'static> State<T> {
 }
 
 #[derive(Debug)]
-struct WaitingState<T: 'static> {
+struct WaitingState<T: 'static, K: 'static> {
     coord: (u8, u8),
     timeout: u16,
     delay: u16,
-    hold: &'static Action<T>,
-    tap: &'static Action<T>,
+    hold: &'static Action<T, K>,
+    tap: &'static Action<T, K>,
     config: HoldTapConfig,
 }
 
@@ -231,7 +239,7 @@ pub enum WaitingAction {
     NoOp,
 }
 
-impl<T> WaitingState<T> {
+impl<T, K> WaitingState<T, K> {
     fn tick(&mut self, queued: &Queue) -> Option<WaitingAction> {
         self.timeout = self.timeout.saturating_sub(1);
         match self.config {
@@ -327,9 +335,11 @@ impl TapHoldTracker {
     }
 }
 
-impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L, T> {
+impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Copy>
+    Layout<C, R, L, T, K>
+{
     /// Creates a new `Layout` object.
-    pub fn new(layers: &'static [[[Action<T>; C]; R]; L]) -> Self {
+    pub fn new(layers: &'static [[[Action<T, K>; C]; R]; L]) -> Self {
         Self {
             layers,
             default_layer: 0,
@@ -340,7 +350,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
         }
     }
     /// Iterates on the key codes of the current state.
-    pub fn keycodes(&self) -> impl Iterator<Item = KeyCode> + '_ {
+    pub fn keycodes(&self) -> impl Iterator<Item = K> + '_ {
         self.states.iter().filter_map(State::keycode)
     }
     fn waiting_into_hold(&mut self) -> CustomEvent<T> {
@@ -418,7 +428,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
             self.resolve_queued_event(queued);
         }
     }
-    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T> {
+    fn press_as_action(&self, coord: (u8, u8), layer: usize) -> &'static Action<T, K> {
         use crate::action::Action::*;
         let action = self
             .layers
@@ -439,7 +449,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
     }
     fn do_action(
         &mut self,
-        action: &'static Action<T>,
+        action: &'static Action<T, K>,
         coord: (u8, u8),
         delay: u16,
     ) -> CustomEvent<T> {
@@ -458,7 +468,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static> Layout<C, R, L,
                     || coord != self.tap_hold_tracker.coord
                     || self.tap_hold_tracker.timeout == 0
                 {
-                    let waiting: WaitingState<T> = WaitingState {
+                    let waiting: WaitingState<T, K> = WaitingState {
                         coord,
                         timeout: *timeout,
                         delay,
