@@ -7,7 +7,7 @@ use usb_device::bus::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
 use usb_device::class::{ControlIn, ControlOut, UsbClass};
 use usb_device::control;
 use usb_device::control::{Recipient, RequestType};
-use usb_device::descriptor::DescriptorWriter;
+use usb_device::descriptor::{DescriptorWriter, lang_id::LangID};
 use usb_device::endpoint::{EndpointAddress, EndpointIn};
 use usb_device::UsbError;
 
@@ -219,7 +219,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
         Ok(())
     }
 
-    fn get_string(&self, _index: StringIndex, _lang_id: u16) -> Option<&str> {
+    fn get_string(&self, _index: StringIndex, _lang_id: LangID) -> Option<&str> {
         None
     }
 
