@@ -105,7 +105,7 @@ impl<T: PartialEq> Debouncer<T> {
             Left(
                 self.new
                     .into_iter()
-                    .zip(self.cur.into_iter())
+                    .zip(&self.cur)
                     .enumerate()
                     .flat_map(move |(i, (o, n))| {
                         o.into_iter()
