@@ -1,7 +1,7 @@
 //! The different actions that can be done.
 
 use crate::key_code::KeyCode;
-use crate::layout::{StackedIter, WaitingAction};
+use crate::layout::{QueuedIter, WaitingAction};
 use core::fmt::Debug;
 
 /// Behavior configuration of HoldTap.
@@ -30,7 +30,7 @@ pub enum HoldTapConfig {
     /// supplied handler function.
     ///
     /// The input to the custom handler will be an iterator that returns
-    /// [Stacked] [Events](Event). The order of the events matches the order the
+    /// [Queued] [Events](Event). The order of the events matches the order the
     /// corresponding key was pressed/released, i.e. the first event is the
     /// event first received after the HoldTap action key is pressed.
     ///
@@ -49,12 +49,12 @@ pub enum HoldTapConfig {
     /// ```
     /// use keyberon::action::{Action, HoldTapConfig, HoldTapAction};
     /// use keyberon::key_code::KeyCode;
-    /// use keyberon::layout::{StackedIter, WaitingAction, Event};
+    /// use keyberon::layout::{QueuedIter, WaitingAction, Event};
     ///
     /// /// Trigger a `Tap` action on the left side of the keyboard if another
     /// /// key on the left side of the keyboard is pressed.
-    /// fn left_mod(stacked_iter: StackedIter) -> Option<WaitingAction> {
-    ///     match stacked_iter.map(|s| s.event()).find(|e| e.is_press()) {
+    /// fn left_mod(queued_iter: QueuedIter) -> Option<WaitingAction> {
+    ///     match queued_iter.map(|s| s.event()).find(|e| e.is_press()) {
     ///         Some(Event::Press(_, j)) if j < 6 => Some(WaitingAction::Tap),
     ///         _ => None,
     ///     }
@@ -62,8 +62,8 @@ pub enum HoldTapConfig {
     ///
     /// /// Trigger a `Tap` action on the right side of the keyboard if another
     /// /// key on the right side of the keyboard is pressed.
-    /// fn right_mod(stacked_iter: StackedIter) -> Option<WaitingAction> {
-    ///     match stacked_iter.map(|s| s.event()).find(|e| e.is_press()) {
+    /// fn right_mod(queued_iter: QueuedIter) -> Option<WaitingAction> {
+    ///     match queued_iter.map(|s| s.event()).find(|e| e.is_press()) {
     ///         Some(Event::Press(_, j)) if j > 5 => Some(WaitingAction::Tap),
     ///         _ => None,
     ///     }
@@ -89,7 +89,7 @@ pub enum HoldTapConfig {
     ///     tap_hold_interval: 0,
     /// });
     /// ```
-    Custom(fn(StackedIter) -> Option<WaitingAction>),
+    Custom(fn(QueuedIter) -> Option<WaitingAction>),
 }
 
 impl Debug for HoldTapConfig {
@@ -100,7 +100,7 @@ impl Debug for HoldTapConfig {
             HoldTapConfig::PermissiveHold => f.write_str("PermissiveHold"),
             HoldTapConfig::Custom(func) => f
                 .debug_tuple("Custom")
-                .field(&(*func as fn(StackedIter<'static>) -> Option<WaitingAction>) as &dyn Debug)
+                .field(&(*func as fn(QueuedIter<'static>) -> Option<WaitingAction>) as &dyn Debug)
                 .finish(),
         }
     }
@@ -113,7 +113,7 @@ impl PartialEq for HoldTapConfig {
             | (HoldTapConfig::HoldOnOtherKeyPress, HoldTapConfig::HoldOnOtherKeyPress)
             | (HoldTapConfig::PermissiveHold, HoldTapConfig::PermissiveHold) => true,
             (HoldTapConfig::Custom(self_func), HoldTapConfig::Custom(other_func)) => {
-                *self_func as fn(StackedIter<'static>) -> Option<WaitingAction> == *other_func
+                *self_func as fn(QueuedIter<'static>) -> Option<WaitingAction> == *other_func
             }
             _ => false,
         }
