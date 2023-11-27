@@ -343,16 +343,10 @@ struct TriLayer {
 }
 
 impl TriLayer {
-    fn apply(&self, last_layer: usize, second_to_last_layer: usize) -> Option<usize> {
-        if (last_layer == self.activation_layers.0
-            && second_to_last_layer == self.activation_layers.1)
-            || (last_layer == self.activation_layers.1
-                && second_to_last_layer == self.activation_layers.0)
-        {
-            Some(self.target_layer)
-        } else {
-            None
-        }
+    fn apply(&self, layer_0: usize, layer_1: usize) -> Option<usize> {
+        (self.activation_layers == (layer_0, layer_1)
+            || self.activation_layers == (layer_1, layer_0))
+            .then_some(self.target_layer)
     }
 }
 
