@@ -373,7 +373,7 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
                 activation_layers,
                 target_layer,
             })
-            .unwrap();
+            .expect("there should be not more tri-layers than layers overall");
     }
 
     /// Iterates on the key codes of the current state.
