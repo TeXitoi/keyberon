@@ -29,10 +29,11 @@ pub enum HoldTapConfig {
     /// A custom configuration. Allows the behavior to be controlled by a caller
     /// supplied handler function.
     ///
-    /// The input to the custom handler will be an iterator that returns
-    /// [Stacked] [Events](Event). The order of the events matches the order the
-    /// corresponding key was pressed/released, i.e. the first event is the
-    /// event first received after the HoldTap action key is pressed.
+    /// The input to the custom handler will be an iterator [StackedIter] that
+    /// returns [Stacked](crate::layout::Stacked) [events](crate::layout::Event).
+    /// The order of the events matches the order the corresponding key was
+    /// pressed/released, i.e. the first event is the event first received
+    /// after the HoldTap action key is pressed.
     ///
     /// The return value should be the intended action that should be used. A
     /// [Some] value will cause one of: [WaitingAction::Tap] for the configured
