@@ -1,6 +1,6 @@
 //! Hardware pin switch matrix handling.
 
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::digital::{InputPin, OutputPin};
 
 /// Describes the hardware-level matrix of switches.
 ///
@@ -65,7 +65,7 @@ where
         for (ri, row) in self.rows.iter_mut().enumerate() {
             row.set_low()?;
             delay();
-            for (ci, col) in self.cols.iter().enumerate() {
+            for (ci, col) in self.cols.iter_mut().enumerate() {
                 if col.is_low()? {
                     keys[ri][ci] = true;
                 }
@@ -124,7 +124,7 @@ where
         let mut keys = [[false; CS]; RS];
 
         for (ri, row) in self.pins.iter_mut().enumerate() {
-            for (ci, col_option) in row.iter().enumerate() {
+            for (ci, col_option) in row.iter_mut().enumerate() {
                 if let Some(col) = col_option {
                     if col.is_low()? {
                         keys[ri][ci] = true;

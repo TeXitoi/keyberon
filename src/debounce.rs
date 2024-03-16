@@ -105,16 +105,17 @@ impl<T: PartialEq> Debouncer<T> {
             Left(
                 self.new
                     .into_iter()
-                    .zip(self.cur.into_iter())
+                    .zip(&self.cur)
                     .enumerate()
                     .flat_map(move |(i, (o, n))| {
-                        o.into_iter().zip(n.into_iter()).enumerate().filter_map(
-                            move |(j, bools)| match bools {
+                        o.into_iter()
+                            .zip(n)
+                            .enumerate()
+                            .filter_map(move |(j, bools)| match bools {
                                 (false, true) => Some(Event::Press(i as u8, j as u8)),
                                 (true, false) => Some(Event::Release(i as u8, j as u8)),
                                 _ => None,
-                            },
-                        )
+                            })
                     }),
             )
         } else {
