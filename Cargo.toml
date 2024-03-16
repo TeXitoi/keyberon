@@ -13,8 +13,8 @@ readme = "README.md"
 
 [dependencies]
 keyberon-macros = { version = "0.1.0", path = "./keyberon-macros" }
-either = { version = "1.6", default-features = false }
+either = { version = "1.9.0", default-features = false }
 embedded-hal = { version = "1.0" }
 usb-device = "0.3"
-heapless = "0.7"
-arraydeque = { version = "0.4.5", default-features = false }
+heapless = "0.8"
+arraydeque = { version = "0.5.1", default-features = false }
