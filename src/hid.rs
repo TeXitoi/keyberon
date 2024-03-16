@@ -120,7 +120,11 @@ impl<B: UsbBus, D: HidDevice> HidClass<'_, B, D> {
         }
     }
 
-    pub fn new_with_polling_interval(device: D, alloc: &UsbBusAllocator<B>, interval: u8) -> HidClass<'_, B, D> {
+    pub fn new_with_polling_interval(
+        device: D,
+        alloc: &UsbBusAllocator<B>,
+        interval: u8,
+    ) -> HidClass<'_, B, D> {
         let max_packet_size = device.max_packet_size();
         HidClass {
             device,
@@ -219,7 +223,7 @@ impl<B: UsbBus, D: HidDevice> UsbClass<B> for HidClass<'_, B, D> {
         Ok(())
     }
 
-    fn get_string(&self, _index: StringIndex, _lang_id: u16) -> Option<&str> {
+    fn get_string(&self, _index: StringIndex, _lang_id: usb_device::LangID) -> Option<&str> {
         None
     }
 
