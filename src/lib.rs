@@ -16,6 +16,7 @@
 #![deny(missing_docs)]
 
 use usb_device::bus::UsbBusAllocator;
+use usb_device::device::StringDescriptors;
 use usb_device::prelude::*;
 
 pub mod action;
@@ -53,8 +54,10 @@ where
     B: usb_device::bus::UsbBus,
 {
     UsbDeviceBuilder::new(bus, UsbVidPid(VID, PID))
-        .manufacturer("RIIR Task Force")
-        .product("Keyberon")
-        .serial_number(env!("CARGO_PKG_VERSION"))
+        .strings(&[StringDescriptors::default()
+            .manufacturer("RIIR Task Force")
+            .product("Keyberon")
+            .serial_number(env!("CARGO_PKG_VERSION"))])
+        .expect("Failed to configure UsbDeviceBuilder")
         .build()
 }
