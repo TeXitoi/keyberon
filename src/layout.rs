@@ -71,7 +71,7 @@ pub type Layers<
 /// The current event stack.
 ///
 /// Events can be retrieved by iterating over this struct and calling [Stacked::event].
-type Stack = ArrayDeque<Stacked, 16, arraydeque::behavior::Wrapping>;
+type Stack = ArrayDeque<Stacked, 32, arraydeque::behavior::Wrapping>;
 
 /// The layout manager. It takes `Event`s and `tick`s as input, and
 /// generate keyboard reports.
