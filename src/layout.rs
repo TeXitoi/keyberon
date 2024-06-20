@@ -49,6 +49,7 @@ pub use keyberon_macros::*;
 use crate::action::{Action, HoldTapAction, HoldTapConfig};
 use crate::key_code::KeyCode;
 use arraydeque::ArrayDeque;
+use core::fmt::Debug;
 use heapless::Vec;
 
 use State::*;
@@ -82,8 +83,8 @@ pub struct Layout<
     T = core::convert::Infallible,
     K = KeyCode,
 > where
-    T: 'static,
-    K: 'static + Copy,
+    T: 'static + Debug,
+    K: 'static + Copy + Debug,
 {
     layers: &'static [[[Action<T, K>; C]; R]; L],
     default_layer: usize,
@@ -219,7 +220,7 @@ impl<T: 'static, K: 'static + Copy> State<T, K> {
 }
 
 #[derive(Debug)]
-struct WaitingState<T: 'static, K: 'static> {
+struct WaitingState<T: 'static + Debug, K: 'static + Debug> {
     coord: (u8, u8),
     timeout: u16,
     delay: u16,
@@ -239,7 +240,11 @@ pub enum WaitingAction {
     NoOp,
 }
 
-impl<T, K> WaitingState<T, K> {
+impl<T, K> WaitingState<T, K>
+where
+    T: 'static + Debug,
+    K: 'static + Debug,
+{
     fn tick(&mut self, stacked: &Stack) -> Option<WaitingAction> {
         self.timeout = self.timeout.saturating_sub(1);
         match self.config {
@@ -335,8 +340,13 @@ impl TapHoldTracker {
     }
 }
 
-impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Copy>
-    Layout<C, R, L, T, K>
+impl<
+        const C: usize,
+        const R: usize,
+        const L: usize,
+        T: 'static + Debug,
+        K: 'static + Copy + Debug,
+    > Layout<C, R, L, T, K>
 {
     /// Creates a new `Layout` object.
     pub fn new(layers: &'static [[[Action<T, K>; C]; R]; L]) -> Self {
