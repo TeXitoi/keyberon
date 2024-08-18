@@ -179,9 +179,23 @@ impl<T> CustomEvent<T> {
 
 #[derive(Debug, Eq, PartialEq)]
 enum State<T: 'static, K: 'static + Copy> {
-    NormalKey { keycode: K, coord: (u8, u8) },
-    LayerModifier { value: usize, coord: (u8, u8) },
-    Custom { value: &'static T, coord: (u8, u8) },
+    NormalKey {
+        keycode: K,
+        coord: (u8, u8),
+    },
+    ModifiedKey {
+        modifiers: &'static [K],
+        keycode: K,
+        coord: (u8, u8),
+    },
+    LayerModifier {
+        value: usize,
+        coord: (u8, u8),
+    },
+    Custom {
+        value: &'static T,
+        coord: (u8, u8),
+    },
 }
 impl<T: 'static, K: 'static + Copy> Copy for State<T, K> {}
 impl<T: 'static, K: 'static + Copy> Clone for State<T, K> {
@@ -194,6 +208,7 @@ impl<T: 'static, K: 'static + Copy> State<T, K> {
     fn keycode(&self) -> Option<K> {
         match self {
             NormalKey { keycode, .. } => Some(*keycode),
+            ModifiedKey { keycode, .. } => Some(*keycode),
             _ => None,
         }
     }
@@ -202,7 +217,11 @@ impl<T: 'static, K: 'static + Copy> State<T, K> {
     }
     fn release(&self, c: (u8, u8), custom: &mut CustomEvent<T>) -> Option<Self> {
         match *self {
-            NormalKey { coord, .. } | LayerModifier { coord, .. } if coord == c => None,
+            NormalKey { coord, .. } | ModifiedKey { coord, .. } | LayerModifier { coord, .. }
+                if coord == c =>
+            {
+                None
+            }
             Custom { value, coord } if coord == c => {
                 custom.update(CustomEvent::Release(value));
                 None
@@ -351,7 +370,14 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
     }
     /// Iterates on the key codes of the current state.
     pub fn keycodes(&self) -> impl Iterator<Item = K> + '_ {
-        self.states.iter().filter_map(State::keycode)
+        let additional_modifiers = match self.states.last() {
+            Some(ModifiedKey { modifiers, .. }) => *modifiers,
+            _ => &[],
+        };
+        self.states
+            .iter()
+            .filter_map(State::keycode)
+            .chain(additional_modifiers.iter().copied())
     }
     fn waiting_into_hold(&mut self) -> CustomEvent<T> {
         if let Some(w) = &self.waiting {
@@ -488,6 +514,14 @@ impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Co
             &KeyCode(keycode) => {
                 self.tap_hold_tracker.coord = coord;
                 let _ = self.states.push(NormalKey { coord, keycode });
+            }
+            &ModifiedKeyCode(&(modifiers, keycode)) => {
+                self.tap_hold_tracker.coord = coord;
+                let _ = self.states.push(ModifiedKey {
+                    coord,
+                    modifiers,
+                    keycode,
+                });
             }
             &MultipleKeyCodes(v) => {
                 self.tap_hold_tracker.coord = coord;
