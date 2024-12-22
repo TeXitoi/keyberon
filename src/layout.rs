@@ -295,7 +295,7 @@ impl<T, K> WaitingState<T, K> {
             .iter()
             .find(|s| self.is_corresponding_release(&s.event))
         {
-            if self.timeout >= self.delay - since {
+            if self.timeout + since >= self.delay {
                 Some(WaitingAction::Tap)
             } else {
                 Some(WaitingAction::Hold)
