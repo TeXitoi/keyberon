@@ -270,7 +270,7 @@ impl<T, K> WaitingState<T, K> {
             .iter()
             .find(|s| self.is_corresponding_release(&s.event))
         {
-            if self.timeout >= self.delay - since {
+            if self.timeout + since >= self.delay {
                 Some(WaitingAction::Tap)
             } else {
                 Some(WaitingAction::Hold)
@@ -747,6 +747,29 @@ mod test {
         assert_keys(&[], layout.keycodes());
         assert_eq!(CustomEvent::NoEvent, layout.tick());
         assert_keys(&[], layout.keycodes());
+    }
+
+    #[test]
+    fn stacked_hold_tap() {
+        static LAYERS: Layers<2, 1, 1> = [[[
+            k(Enter),
+            HoldTap(&HoldTapAction {
+                timeout: 10,
+                hold: k(LAlt),
+                tap: k(Space),
+                config: HoldTapConfig::Default,
+                tap_hold_interval: 0,
+            }),
+        ]]];
+
+        let mut layout = Layout::new(&LAYERS);
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        // Push 2 events in a row, without ticking:
+        // Press/Release attached to a HoldTap
+        layout.event(Press(0, 1));
+        layout.event(Release(0, 1));
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
+        assert_eq!(CustomEvent::NoEvent, layout.tick());
     }
 
     #[test]
