@@ -184,6 +184,21 @@ where
     Trans,
     /// A key code, i.e. a classic key.
     KeyCode(K),
+    /// TOOD document
+    ModifiedKeyCode(
+        &'static (
+            // The modifiers to be applied to the key code. Unlike with
+            // MultipleKeyCodes, these modifiers will be released right after
+            // pressing and re-pressed before releasing the key. This ensures
+            // modifiers are not incorrectly applied to other keys that might be
+            // pressed while a modified key is still being held down, e.g. when
+            // rolling "&[". With MultipleKeyCodes, that would result in "&{",
+            // because the shift modifier is applied to "[" as well.
+            &'static [K],
+            // A key code, i.e. a classic key.
+            K,
+        ),
+    ),
     /// Multiple key codes sent at the same time, as if these keys
     /// were pressed at the same time. Useful to send a shifted key,
     /// or complex shortcuts like Ctrl+Alt+Del in a single key press.
