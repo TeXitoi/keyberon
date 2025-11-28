@@ -82,8 +82,7 @@ pub enum KeyCode {
     SColon,
     /// `'` and `"`.
     Quote,
-    // How to have ` as code?
-    /// \` and `~`.
+    /// `` ` `` and `~`.
     Grave,
     /// `,` and `<`.
     Comma,
